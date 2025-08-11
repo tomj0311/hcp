@@ -1,12 +1,8 @@
 import React from 'react';
 import { Drawer, Toolbar, List, ListItemButton, ListItemIcon, ListItemText, Divider, Box, Typography, Tooltip, Chip, alpha } from '@mui/material';
 import { styled, useTheme } from '@mui/material/styles';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import PeopleIcon from '@mui/icons-material/People';
-import PersonAddIcon from '@mui/icons-material/PersonAddAlt1';
-import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
-import PriceChangeIcon from '@mui/icons-material/PriceChange';
-import LogoutIcon from '@mui/icons-material/Logout';
+// Switched to lucide-react open-source icon set for a lighter, more elegant aesthetic.
+import { LayoutDashboard, Users, UserPlus, Hospital, BadgeDollarSign, LogOut } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const FULL_WIDTH = 240;
@@ -22,16 +18,16 @@ export default function SideNav({ role, onLogout, collapsed }) {
     {
       heading: 'GENERAL',
       items: [
-        { label: 'Dashboard', icon: <DashboardIcon />, to: '/' },
-        { label: 'Pricing', icon: <PriceChangeIcon />, to: '/pricing' }
+  { label: 'Dashboard', icon: <LayoutDashboard size={18} strokeWidth={1.7} /> , to: '/' },
+  { label: 'Pricing', icon: <BadgeDollarSign size={18} strokeWidth={1.7} />, to: '/pricing' }
       ]
     },
     role === 'admin' ? {
       heading: 'MANAGEMENT',
       items: [
-        { label: 'Doctors', icon: <LocalHospitalIcon />, to: '/register/doctor' },
-        { label: 'Patients', icon: <PeopleIcon />, to: '/register/patient' },
-        { label: 'Legacy Register', icon: <PersonAddIcon />, to: '/register', badge: 'LEGACY' }
+  { label: 'Doctors', icon: <Hospital size={18} strokeWidth={1.7} />, to: '/register/doctor' },
+  { label: 'Patients', icon: <Users size={18} strokeWidth={1.7} />, to: '/register/patient' },
+  { label: 'Legacy Register', icon: <UserPlus size={18} strokeWidth={1.7} />, to: '/register', badge: 'LEGACY' }
       ]
     } : null
   ].filter(Boolean);
@@ -80,10 +76,12 @@ export default function SideNav({ role, onLogout, collapsed }) {
     fontSize: 13,
     letterSpacing: .25,
     width: collapsed ? 48 : '100%',
-    '& .MuiListItemIcon-root': { 
-      minWidth: collapsed ? 48 : 34, 
-      color: 'inherit', 
-      justifyContent: 'center' 
+    '& .MuiListItemIcon-root': {
+      minWidth: collapsed ? 48 : 40,
+      color: 'inherit',
+      justifyContent: 'center',
+      // Increase gap between icon and text when expanded
+      mr: collapsed ? 0 : 0.5
     },
     '&:hover': { background: alpha('#ffffff', 0.07) },
     '&.Mui-selected': {
@@ -145,7 +143,7 @@ export default function SideNav({ role, onLogout, collapsed }) {
       <List dense sx={{ mb: 1, px: collapsed ? 0.25 : 0.5 }}>
         <ListItemButton onClick={onLogout} sx={itemBaseSx}>
           <Tooltip title={collapsed ? 'Logout' : ''} placement="right">
-            <ListItemIcon><LogoutIcon /></ListItemIcon>
+            <ListItemIcon><LogOut size={18} strokeWidth={1.7} /></ListItemIcon>
           </Tooltip>
           {!collapsed && <ListItemText primary="Logout" primaryTypographyProps={{ fontSize: {xs:12, sm:13}, fontWeight: 600 }} />}
         </ListItemButton>
