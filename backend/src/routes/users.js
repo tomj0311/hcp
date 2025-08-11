@@ -6,6 +6,8 @@ import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import { v4 as uuid } from 'uuid';
 import { sendRegistrationEmail } from '../services/emailService.js';
+import crypto from 'crypto';
+import { verifyTokenMiddleware } from '../utils/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,30 +26,21 @@ function write(file,data){
 
 const router = Router();
 
-router.get('/doctors',(req,res)=>{
-  res.json(read(doctorsFile));
-});
-
-router.post('/doctors',[body('name').notEmpty()],async (req,res)=>{
+// ---------------- Public routes ----------------
+router.post('/patients',[
+  body('name').notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Valid email required'),
+  body('password').isLength({min:8}).withMessage('Password must be at least 8 characters')
+], async (req,res)=>{
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
-  const doctors = read(doctorsFile);
-  const doctor = { id: uuid(), rank: Math.floor(Math.random()*100), active: true, aiAgent: req.body.aiAgent || null, ...req.body };
-  doctors.push(doctor);
-  write(doctorsFile, doctors);
-  // fire and forget email
-  sendRegistrationEmail(doctor.email, 'doctor').catch(()=>{});
-  res.status(201).json(doctor);
-});
 
-router.get('/patients',(req,res)=>{
-  res.json(read(patientsFile));
-});
-
-router.post('/patients',[body('name').notEmpty(), body('password').isLength({min:6})], async (req,res)=>{
-  const errors = validationResult(req);
-  if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
   const patients = read(patientsFile);
+  // Duplicate email check
+  if(patients.some(p=> p.email === req.body.email)){
+    return res.status(400).json({message:'Email already registered. Please log in or use a different email.'});
+  }
+
   const verificationTokens = read(verificationFile);
   const { password, ...rest } = req.body;
   const hash = await bcrypt.hash(password, 10);
@@ -86,6 +79,57 @@ router.post('/patients/login',[body('email').isEmail(), body('password').notEmpt
   const ok = await bcrypt.compare(req.body.password, patient.password);
   if(!ok) return res.status(401).json({error:'invalid credentials'});
   res.json({ id: patient.id, name: patient.name, email: patient.email, role:'patient' });
+});
+
+// ---------------- Protected routes ----------------
+router.get('/doctors', verifyTokenMiddleware, (req,res)=>{
+  res.json(read(doctorsFile));
+});
+
+router.post('/doctors', verifyTokenMiddleware, [body('name').notEmpty()],async (req,res)=>{
+  const errors = validationResult(req);
+  if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
+  const doctors = read(doctorsFile);
+  const doctor = { id: uuid(), rank: Math.floor(Math.random()*100), active: true, aiAgent: req.body.aiAgent || null, ...req.body };
+  doctors.push(doctor);
+  write(doctorsFile, doctors);
+  sendRegistrationEmail(doctor.email, 'doctor').catch(()=>{});
+  res.status(201).json(doctor);
+});
+
+router.get('/patients', verifyTokenMiddleware, (req,res)=>{
+  res.json(read(patientsFile));
+});
+
+// Admin-only: create & activate patient directly (no email verification step)
+router.post('/patients/admin', verifyTokenMiddleware, [
+  body('name').notEmpty().withMessage('Name is required'),
+  body('email').isEmail().withMessage('Valid email required'),
+  body('password').optional().isLength({min:8}).withMessage('Password must be at least 8 characters when provided')
+], async (req,res)=>{
+  if(!req.user || req.user.role !== 'admin') return res.status(403).json({error:'admin only'});
+  const errors = validationResult(req);
+  if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
+
+  const patients = read(patientsFile);
+  if(patients.some(p=> p.email === req.body.email)){
+    return res.status(400).json({message:'Email already registered.'});
+  }
+
+  let { password, ...rest } = req.body;
+  let generated = false;
+  if(!password){
+    password = crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+    generated = true;
+  }
+  const hash = await bcrypt.hash(password,10);
+  const patient = { id: uuid(), active:true, password: hash, ...rest };
+  patients.push(patient);
+  write(patientsFile, patients);
+  // Optionally still send welcome email (without verification)
+  sendRegistrationEmail(patient.email, 'patient').catch(()=>{});
+  const { password: _pw, ...sanitized } = patient;
+  res.status(201).json({ ...sanitized, tempPassword: generated ? password : undefined });
 });
 
 export default router;

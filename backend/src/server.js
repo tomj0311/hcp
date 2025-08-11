@@ -46,7 +46,8 @@ app.use(morgan('dev'));
 
 app.get('/health', (req,res)=> res.json({status:'ok'}));
 app.use('/auth', authRouter);
-app.use('/users', verifyTokenMiddleware, userRouter);
+// Users router now internally protects only the routes that require auth.
+app.use('/users', userRouter);
 app.use('/payments', verifyTokenMiddleware, paymentRouter);
 
 // simple temp storage

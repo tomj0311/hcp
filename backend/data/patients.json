@@ -1,0 +1,30 @@
+[
+  {
+    "id": "9e1a8603-a3b6-4c7f-a4d8-73985216b33c",
+    "active": true,
+    "password": "$2b$10$yh190HdXMeyuJNNsrtSUtuKC5k27U29tMqMYkPVWwrmvny6Q0AE0e",
+    "name": "Tom Jose",
+    "firstName": "Tom",
+    "lastName": "Jose",
+    "email": "tomj0311@gmail.com",
+    "phone": "+9656215107",
+    "dateOfBirth": "1975-11-03",
+    "gender": "male",
+    "address": {
+      "street": "xyz",
+      "city": "",
+      "state": "",
+      "zipCode": ""
+    },
+    "emergencyContact": {
+      "name": "",
+      "phone": ""
+    },
+    "medicalInfo": {
+      "conditions": [],
+      "medications": [],
+      "allergies": [],
+      "insurance": ""
+    }
+  }
+]
