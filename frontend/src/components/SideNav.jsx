@@ -41,12 +41,12 @@ export default function SideNav({ role, onLogout, collapsed }) {
     '& .MuiDrawer-paper': {
       width,
       boxSizing: 'border-box',
-      background: '#141414',
-      color: theme.palette.grey[100],
-      borderRight: '1px solid #1d1d1d',
+      background: theme.palette.mode === 'dark' ? '#141414' : theme.palette.background.paper,
+      color: theme.palette.mode === 'dark' ? theme.palette.grey[100] : theme.palette.text.primary,
+      borderRight: theme.palette.mode === 'dark' ? '1px solid #1d1d1d' : '1px solid #e5e8ef',
       backdropFilter: 'blur(4px)',
       overflowX: 'hidden',
-      transition: 'width .25s ease',
+      transition: 'width .25s ease, background-color .25s ease, border-color .25s ease, color .25s ease',
       display:'flex',
       flexDirection:'column',
       zIndex: isMobile ? theme.zIndex.drawer : theme.zIndex.drawer - 1
@@ -83,11 +83,11 @@ export default function SideNav({ role, onLogout, collapsed }) {
       // Increase gap between icon and text when expanded
       mr: collapsed ? 0 : 0.5
     },
-    '&:hover': { background: alpha('#ffffff', 0.07) },
+    '&:hover': { background: theme.palette.mode==='dark' ? alpha('#ffffff', 0.07) : alpha('#000000', 0.05) },
     '&.Mui-selected': {
-      background: alpha(theme.palette.primary.main, 0.17),
+      background: alpha(theme.palette.primary.main, theme.palette.mode==='dark'? 0.17 : 0.12),
       boxShadow: `inset 0 0 0 1px ${alpha(theme.palette.primary.main,0.35)}`,
-      '&:hover': { background: alpha(theme.palette.primary.main, 0.22) }
+      '&:hover': { background: alpha(theme.palette.primary.main, theme.palette.mode==='dark'? 0.22 : 0.18) }
     },
     justifyContent: collapsed ? 'center' : 'flex-start',
     transition:'background .18s ease, width .25s ease'
@@ -101,7 +101,7 @@ export default function SideNav({ role, onLogout, collapsed }) {
           {!collapsed && <Typography variant="subtitle1" sx={{ fontWeight:700, letterSpacing:.5, fontSize:{xs:14, sm:16}, lineHeight:1 }}>HCP</Typography>}
         </Box>
       </Toolbar>
-      <Divider sx={{ borderColor: '#262626' }} />
+  <Divider sx={{ borderColor: theme.palette.mode==='dark' ? '#262626' : '#e5e8ef', transition:'border-color .25s ease' }} />
       {sections.map(sec => (
         <Box key={sec.heading} sx={{ mt: 1 }}>
           {!collapsed && <Typography variant="overline" sx={{ px: 2, pt: .5, pb: .5, display: 'block', fontSize: {xs:9, sm:10}, letterSpacing: 1.3, opacity: 0.55 }}>{sec.heading}</Typography>}
@@ -136,7 +136,7 @@ export default function SideNav({ role, onLogout, collapsed }) {
               return content;
             })}
           </List>
-          <Divider sx={{ borderColor: '#1a1a1a', mt: .75 }} />
+          <Divider sx={{ borderColor: theme.palette.mode==='dark' ? '#1a1a1a' : '#e5e8ef', mt: .75, transition:'border-color .25s ease' }} />
         </Box>
       ))}
       <Box sx={{ flexGrow: 1 }} />

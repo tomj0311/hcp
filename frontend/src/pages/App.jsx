@@ -11,6 +11,7 @@ import PatientRegistration from '../components/PatientRegistration.jsx';
 import DoctorRegistration from '../components/DoctorRegistration.jsx';
 import Pricing from '../components/Pricing.jsx';
 import SideNav, { getDrawerWidth } from '../components/SideNav.jsx';
+import Consultation from '../components/Consultation.jsx';
 
 function ProtectedRoute({ auth, children }){
   if(!auth) return <Navigate to="/login" replace />;
@@ -38,7 +39,7 @@ export default function App(){
 
   const logout = ()=>{ setAuth(null); localStorage.removeItem('hcp_auth'); nav('/login'); };
   const requestConsult = (doctor)=>{
-    alert(`Consult request sent to ${doctor.name}`);
+    nav(`/consult/${doctor.id}`, { state:{ doctor } });
   };
 
   const [navCollapsed,setNavCollapsed] = useState(()=>{
@@ -53,7 +54,20 @@ export default function App(){
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar position="fixed" color="transparent" elevation={0} sx={{borderBottom: theme.palette.mode==='dark'? '1px solid #333':'1px solid #e0e0e0', ml: showNav && !isMobile? `${drawerWidth}px`:0, width: showNav && !isMobile? `calc(100% - ${drawerWidth}px)`:'100%', borderRadius: 0, zIndex: theme.zIndex.drawer + 1}}>
+      <AppBar
+        position="fixed"
+        color="transparent"
+        elevation={0}
+        sx={{
+          borderBottom: theme.palette.mode==='dark'? '1px solid #333':'1px solid #e0e0e0',
+          // Keep fully transparent background (no solid fill)
+          ml: showNav && !isMobile? `${drawerWidth}px`:0,
+          width: showNav && !isMobile? `calc(100% - ${drawerWidth}px)`:'100%',
+          borderRadius: 0,
+          zIndex: theme.zIndex.drawer + 2,
+          backdropFilter: 'saturate(180%) blur(8px)'
+        }}
+      >
         <Toolbar sx={{minHeight:{xs:56, sm:64}}}>
           {showNav && (
             <Tooltip title={navCollapsed ? 'Expand navigation' : 'Collapse navigation'}>
@@ -76,9 +90,11 @@ export default function App(){
           {!auth && <Button component={Link} to="/login" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Login</Button>}
           {auth && <Button onClick={logout} color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Logout</Button>}
         </Toolbar>
-      </AppBar>
+    </AppBar>
+    {/* Spacer to offset the fixed AppBar height so content never slides underneath */}
+    <Toolbar sx={{ minHeight:{xs:56, sm:64}, mb: 0 }} />
   {showNav && <SideNav role={auth?.role} onLogout={logout} collapsed={navCollapsed} />}
-  <Box component="main" sx={{ flexGrow:1, mt:{xs:7, sm:8, md:12}, ml: showNav && !isMobile? `${drawerWidth}px`:0, px:{xs:1, sm:2, md:3}, pb:{xs:3, md:6}, transition:'margin-left .25s ease' }}>
+  <Box component="main" sx={{ flexGrow:1, ml: showNav && !isMobile? `${drawerWidth}px`:0, px:{xs:1, sm:2, md:3}, pb:{xs:3, md:6}, transition:'margin-left .25s ease', position:'relative', zIndex: 0 }}>
         <Routes>
           <Route path="/" element={<ProtectedRoute auth={auth}><Dashboard token={auth?.token} role={auth?.role} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} onRequestConsult={requestConsult} /></ProtectedRoute>} />
           <Route path="/login" element={auth? <Navigate to="/" replace />:<LoginForm onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
@@ -86,6 +102,7 @@ export default function App(){
           <Route path="/register/patient" element={<AdminRoute auth={auth}><PatientRegistration /></AdminRoute>} />
           <Route path="/register/doctor" element={<AdminRoute auth={auth}><DoctorRegistration /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/consult/:id" element={<ProtectedRoute auth={auth}><Consultation /></ProtectedRoute>} />
           <Route path="*" element={<Typography>Not Found</Typography>} />
         </Routes>
       </Box>

@@ -4,7 +4,7 @@ import { Card, CardContent, Typography, CardActionArea, Stack, Avatar } from '@m
 export default function DoctorCard({ doctor, onSelect }){
   return (
     <Card sx={{ minWidth: {xs: 150, sm: 200}, width: '100%' }}>
-      <CardActionArea onClick={()=>onSelect?.(doctor)}>
+      <CardActionArea onClick={()=>onSelect?.(doctor)} aria-label={`select doctor ${doctor.name}`}>
         <CardContent sx={{p:{xs:1.5, sm:2}}}>
           <Stack direction={{xs:'column', sm:'row'}} spacing={{xs:1, sm:2}} alignItems="center">
             <Avatar sx={{width:{xs:32, sm:40}, height:{xs:32, sm:40}}}>{doctor.name?.[0]||'D'}</Avatar>
