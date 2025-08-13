@@ -36,7 +36,7 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
   return (
     <Box sx={{px:{xs:1, sm:0}}}>
       <Stack direction={{xs:'column', sm:'row'}} justifyContent="space-between" alignItems={{xs:'flex-start', sm:'center'}} spacing={{xs:2, sm:0}} sx={{mb:3}}>
-          <Typography variant="h5" sx={{fontWeight:700, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>{role==='consumer'? 'Consumer Dashboard':'Admin Dashboard'}</Typography>
+          <Typography variant="h5" sx={{fontWeight:700, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>{role==='consumer'? 'Consumer Dashboard': role==='provider'? 'Provider Dashboard':'Admin Dashboard'}</Typography>
         <Stack direction="row" spacing={1} alignItems="center">
           <Typography variant="caption" sx={{fontSize:{xs:'0.7rem', sm:'0.75rem'}}}>{mode==='dark'? 'Dark':'Light'} mode</Typography>
           <Switch checked={mode==='dark'} onChange={onToggleMode} inputProps={{'aria-label':'toggle theme'}} size="small" />
@@ -78,7 +78,7 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
           <Grid item xs={12}>
             <Paper sx={{p:{xs:1.5, sm:2}}}>
               <Typography variant="subtitle1" sx={{fontWeight:600, mb:1, fontSize:{xs:'1rem', sm:'1.125rem'}}}>Top Providers</Typography>
-              <Grid container spacing={{xs:1.5, sm:2}} aria-label="doctor list">
+              <Grid container spacing={{xs:1.5, sm:2}} aria-label="provider list">
                 {providers.map(d => (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={d.id}>
                     <ProviderCard provider={d} onSelect={()=> onRequestConsult(d)} />
@@ -108,7 +108,7 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
           <Grid item xs={12}>
             <Paper sx={{p:{xs:1.5, sm:2}}}>
               <Typography variant="subtitle1" sx={{fontWeight:600, mb:1, fontSize:{xs:'1rem', sm:'1.125rem'}}}>Available Providers</Typography>
-              <Grid container spacing={{xs:1.5, sm:2}} aria-label="doctor list">
+              <Grid container spacing={{xs:1.5, sm:2}} aria-label="provider list">
                 {providers.map(d => (
                   <Grid item xs={12} sm={6} md={4} lg={3} key={d.id}>
                     <ProviderCard provider={d} onSelect={()=> onRequestConsult(d)} />

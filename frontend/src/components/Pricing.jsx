@@ -4,7 +4,7 @@ import CheckIcon from '@mui/icons-material/CheckCircleOutline';
 import axios from 'axios';
 
 const tiers = [
-  { title:'Freemium', price:'$0', desc:'Explore doctors and basic platform access.', plan:'freemium', color:'default', features:['Browse doctor directory','Basic profile','Standard response times'] },
+  { title:'Freemium', price:'$0', desc:'Explore providers and basic platform access.', plan:'freemium', color:'default', features:['Browse provider directory','Basic profile','Standard response times'] },
   { title:'Per Consultation', price:'$50', desc:'One-off live consultation.', plan:'consultation', color:'primary', features:['Everything in Freemium','1 live consultation credit','Priority response slot','Basic transcript'] },
   { title:'Enterprise', price:'$100', desc:'Priority support & extended features for teams.', plan:'enterprise', color:'secondary', features:['All Consultation features','Unlimited consult requests*','Dedicated support channel','Advanced analytics (coming soon)'] }
 ];

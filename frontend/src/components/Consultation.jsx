@@ -43,11 +43,11 @@ export default function Consultation(){
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const [doctor,setDoctor] = useState(location.state?.doctor || null);
-  const [loading,setLoading] = useState(!doctor);
+  const [provider,setProvider] = useState(location.state?.provider || null);
+  const [loading,setLoading] = useState(!provider);
   const [channel,setChannel] = useState('video'); // Default to video first
   const [messages,setMessages] = useState(()=>[
-    { id:'welcome', role:'system', text:'You are connected to the AI virtual doctor. Your video consultation is ready to begin.' }
+  { id:'welcome', role:'system', text:'You are connected to the virtual provider. Your video consultation is ready to begin.' }
   ]);
   const [input,setInput] = useState('');
   const [sending,setSending] = useState(false);
@@ -77,21 +77,21 @@ export default function Consultation(){
   const videoContainerRef = useRef(null);
   const initialAutoScrollSkippedRef = useRef(false);
 
-  // Fetch doctor if not in navigation state (deep-link support)
+  // Fetch provider if not in navigation state (deep-link support)
   useEffect(()=>{
-    if(!doctor){
+  if(!provider){
       (async()=>{
         try {
-          const res = await axios.get(import.meta.env.VITE_API_URL + '/users/doctors');
-          const found = res.data.find(d=> String(d.id) === String(id));
-          if(found) setDoctor(found);
+      const res = await axios.get(import.meta.env.VITE_API_URL + '/users/providers', { headers: { Authorization: `Bearer ${localStorage.getItem('hcp_auth')? JSON.parse(localStorage.getItem('hcp_auth')).token: ''}` }});
+      const found = res.data.find(d=> String(d.id) === String(id));
+      if(found) setProvider(found);
         } catch(e){ /* silent */ }
         setLoading(false);
       })();
     } else {
       setLoading(false);
     }
-  },[doctor,id]);
+  },[provider,id]);
 
   // Only auto-scroll after initial mount to avoid jumping page to bottom when component first loads
   useEffect(()=>{
@@ -464,7 +464,7 @@ export default function Consultation(){
   <Stack direction="row" spacing={{ xs:0.5, sm:1 }} alignItems="center" sx={{mb:{ xs:1.5, sm:2 }}}>
           <Tooltip title="Back to dashboard"><IconButton aria-label="back" onClick={()=> navigate('/')} size="large"><ArrowBackIcon fontSize="large" /></IconButton></Tooltip>
           <Typography variant="h5" sx={{fontWeight:700, fontSize:{xs:'1.2rem', sm:'1.4rem'}}}>Video Consultation</Typography>
-          <Box component="span" sx={{ml:1, opacity:0.8, fontSize:{xs:'0.9rem', sm:'1rem'}, fontWeight:500}}>{doctor? `with Dr. ${doctor.name}` : (loading? 'Loading...' : 'Unknown')}</Box>
+          <Box component="span" sx={{ml:1, opacity:0.8, fontSize:{xs:'0.9rem', sm:'1rem'}, fontWeight:500}}>{provider? `with ${provider.name}` : (loading? 'Loading...' : 'Unknown')}</Box>
           <Box sx={{flexGrow:1}} />
           <Tooltip title="Media settings">
             <IconButton 
@@ -595,9 +595,9 @@ export default function Consultation(){
                 mx: 'auto', 
                 mb: 3,
                 boxShadow: '0 8px 28px -10px rgba(0,0,0,0.45)' 
-              }} alt="Doctor Avatar" />
+              }} alt="Provider Avatar" />
               <Typography variant="h6" sx={{ mb: 2, fontSize: { xs: '1.1rem', sm: '1.3rem' } }}>
-                Voice Call with Dr. {doctor?.name || 'Doctor'}
+                Voice Call with {provider?.name || 'Provider'}
               </Typography>
               <Stack direction="row" spacing={2} justifyContent="center" sx={{ mb: 3 }}>
                 <Button
@@ -615,7 +615,7 @@ export default function Consultation(){
                 </Button>
               </Stack>
               <Typography variant="body1" color="text.secondary" sx={{fontSize: '1rem', lineHeight: 1.6}}>
-                {micEnabled ? 'Voice call is active. Speak clearly to communicate with your doctor.' : 'Click "Unmute" to start your voice consultation.'}
+                {micEnabled ? 'Voice call is active. Speak clearly to communicate with your provider.' : 'Click "Unmute" to start your voice consultation.'}
               </Typography>
             </Box>
           )}
@@ -643,15 +643,15 @@ export default function Consultation(){
                 
                 {/* (Floating preview handled globally outside this container) */}
                 
-                {/* Doctor's Video Placeholder */}
+                {/* Provider Video Placeholder */}
                 <Avatar sx={{
                   width: { xs: 120, sm: 150 }, 
                   height: { xs: 120, sm: 150 }, 
                   boxShadow: '0 8px 28px -10px rgba(0,0,0,0.45)',
                   mb: 2
-                }} alt="Doctor Avatar" />
+                }} alt="Provider Avatar" />
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, fontSize: { xs: '1.1rem', sm: '1.3rem' } }}>
-                  Dr. {doctor?.name || 'Doctor'}
+                  {provider?.name || 'Provider'}
                 </Typography>
                 
                 {/* Video Controls */}
@@ -688,7 +688,7 @@ export default function Consultation(){
                 
                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem', maxWidth: 400, lineHeight: 1.5 }}>
                   {cameraEnabled || micEnabled 
-                    ? 'Your video consultation is ready. The doctor can see and hear you.'
+                    ? 'Your video consultation is ready. The provider can see and hear you.'
                     : 'Turn on your camera and microphone to start your video consultation.'
                   }
                 </Typography>

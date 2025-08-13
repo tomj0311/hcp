@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Typography, Paper, Stack, Link as MuiLink } from '@mui/material';
+import { TextField, Button, Typography, Paper, Stack, Link as MuiLink, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
@@ -8,13 +8,14 @@ export default function LoginForm({ onLogin }){
   const [password,setPassword] = useState('');
   const [error,setError] = useState(null);
   const [loading,setLoading] = useState(false);
+  const [role,setRole] = useState('consumer');
 
   const submit = async (e)=>{
     e.preventDefault();
     setError(null); setLoading(true);
     try {
-      const res = await axios.post(import.meta.env.VITE_API_URL + '/auth/login', { username: email, password });
-      if(res.data.role === 'admin'){
+  const res = await axios.post(import.meta.env.VITE_API_URL + '/auth/login', { username: email, password });
+  if(res.data.role === 'admin' && role !== 'admin'){
         setError('Use admin login page for admin accounts');
       } else {
         onLogin(res.data);
@@ -23,8 +24,12 @@ export default function LoginForm({ onLogin }){
   };
 
   return (
-    <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:4}, maxWidth:{xs:360, sm:420}, mx:'auto', mt:{xs:2, sm:3}, boxShadow:(theme)=> theme.palette.mode==='dark'? '0 6px 26px -10px rgba(0,0,0,0.6)':'0 6px 24px -8px rgba(0,0,0,0.08)'}} aria-label="Patient login form">
-  <Typography variant="h5" sx={{fontWeight:700, mb:3, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>Consumer Sign In</Typography>
+    <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:4}, maxWidth:{xs:360, sm:420}, mx:'auto', mt:{xs:2, sm:3}, boxShadow:(theme)=> theme.palette.mode==='dark'? '0 6px 26px -10px rgba(0,0,0,0.6)':'0 6px 24px -8px rgba(0,0,0,0.08)'}} aria-label="login form">
+  <Typography variant="h5" sx={{fontWeight:700, mb:2, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>Sign In</Typography>
+      <ToggleButtonGroup exclusive size="small" value={role} onChange={(e,v)=> v && setRole(v)} fullWidth sx={{mb:2}}>
+        <ToggleButton value="consumer">Consumer</ToggleButton>
+        <ToggleButton value="provider">Provider</ToggleButton>
+      </ToggleButtonGroup>
       <Stack spacing={2}>
         <TextField label="Email" type="email" fullWidth value={email} onChange={e=> setEmail(e.target.value)} required size={window.innerWidth < 600 ? 'small' : 'medium'} inputProps={{'aria-label':'username'}} />
         <TextField label="Password" type="password" fullWidth value={password} onChange={e=> setPassword(e.target.value)} required size={window.innerWidth < 600 ? 'small' : 'medium'} inputProps={{'aria-label':'password'}} />

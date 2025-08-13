@@ -9,7 +9,13 @@ import bcrypt from 'bcrypt';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataDir = path.join(__dirname,'..','..','data');
-const patientsFile = path.join(dataDir,'patients.json');
+// Updated generic consumer store
+const consumersDir = path.join(dataDir,'consumers');
+const providersDir = path.join(dataDir,'providers');
+if(!fs.existsSync(consumersDir)) fs.mkdirSync(consumersDir,{recursive:true});
+if(!fs.existsSync(providersDir)) fs.mkdirSync(providersDir,{recursive:true});
+const consumersFile = path.join(consumersDir,'consumers.json');
+const providersFile = path.join(providersDir,'providers.json');
 function read(file){
   if(!fs.existsSync(file)) return [];
   return JSON.parse(fs.readFileSync(file));
@@ -29,14 +35,24 @@ router.post('/login', [body('username').notEmpty(), body('password').notEmpty()]
     const token = generateToken({ role:'admin', username });
     return res.json({ token, role:'admin' });
   }
-  // patient login fallback (email as username)
-  const patients = read(patientsFile);
-  const patient = patients.find(p=> p.email === username);
-  if(patient && patient.active){
-    const ok = await bcrypt.compare(password, patient.password);
+  // consumer login
+  const consumers = read(consumersFile);
+  const consumer = consumers.find(p=> p.email === username);
+  if(consumer && consumer.active){
+    const ok = await bcrypt.compare(password, consumer.password);
     if(ok){
-      const token = generateToken({ role:'patient', id: patient.id, email: patient.email });
-      return res.json({ token, role:'patient' });
+      const token = generateToken({ role:'consumer', id: consumer.id, email: consumer.email });
+      return res.json({ token, role:'consumer', name: consumer.name });
+    }
+  }
+  // provider login
+  const providers = read(providersFile);
+  const provider = providers.find(p=> p.email === username);
+  if(provider && provider.active){
+    const ok = await bcrypt.compare(password, provider.password);
+    if(ok){
+      const token = generateToken({ role:'provider', id: provider.id, email: provider.email });
+      return res.json({ token, role:'provider', name: provider.name });
     }
   }
   return res.status(401).json({error:'invalid credentials'});

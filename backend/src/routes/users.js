@@ -12,9 +12,14 @@ import { verifyTokenMiddleware } from '../utils/auth.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataDir = path.join(__dirname,'..','..','data');
-const doctorsFile = path.join(dataDir,'doctors.json');
-const patientsFile = path.join(dataDir,'patients.json');
-const verificationFile = path.join(dataDir,'patient_verifications.json');
+// New generic data layout (providers & consumers stored in separate sub-folders)
+const providersDir = path.join(dataDir,'providers');
+const consumersDir = path.join(dataDir,'consumers');
+if(!fs.existsSync(providersDir)) fs.mkdirSync(providersDir,{recursive:true});
+if(!fs.existsSync(consumersDir)) fs.mkdirSync(consumersDir,{recursive:true});
+const providersFile = path.join(providersDir,'providers.json');
+const consumersFile = path.join(consumersDir,'consumers.json');
+const consumerVerificationFile = path.join(consumersDir,'verifications.json');
 
 function read(file){
   if(!fs.existsSync(file)) return [];
@@ -27,7 +32,8 @@ function write(file,data){
 const router = Router();
 
 // ---------------- Public routes ----------------
-router.post('/patients',[
+// ---------------- Consumer (formerly patient) public registration ----------------
+router.post('/consumers',[
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email required'),
   body('password').isLength({min:8}).withMessage('Password must be at least 8 characters')
@@ -35,74 +41,88 @@ router.post('/patients',[
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
 
-  const patients = read(patientsFile);
-  // Duplicate email check
-  if(patients.some(p=> p.email === req.body.email)){
+  const consumers = read(consumersFile);
+  if(consumers.some(p=> p.email === req.body.email)){
     return res.status(400).json({message:'Email already registered. Please log in or use a different email.'});
   }
 
-  const verificationTokens = read(verificationFile);
+  const verificationTokens = read(consumerVerificationFile);
   const { password, ...rest } = req.body;
   const hash = await bcrypt.hash(password, 10);
-  const patient = { id: uuid(), active:false, password: hash, ...rest };
-  patients.push(patient);
-  write(patientsFile, patients);
+  const consumer = { id: uuid(), role:'consumer', active:false, password: hash, createdAt: Date.now(), ...rest };
+  consumers.push(consumer);
+  write(consumersFile, consumers);
   const token = uuid();
-  verificationTokens.push({ token, patientId: patient.id, createdAt: Date.now() });
-  write(verificationFile, verificationTokens);
-  sendRegistrationEmail(patient.email, 'patient').catch(()=>{});
-  res.status(201).json({ id: patient.id, verifyToken: token });
+  verificationTokens.push({ token, consumerId: consumer.id, createdAt: Date.now() });
+  write(consumerVerificationFile, verificationTokens);
+  sendRegistrationEmail(consumer.email, 'consumer').catch(()=>{});
+  res.status(201).json({ id: consumer.id, verifyToken: token });
 });
 
-router.post('/patients/verify',[body('token').notEmpty()], (req,res)=>{
+router.post('/consumers/verify',[body('token').notEmpty()], (req,res)=>{
   const { token } = req.body;
-  const patients = read(patientsFile);
-  const verificationTokens = read(verificationFile);
+  const consumers = read(consumersFile);
+  const verificationTokens = read(consumerVerificationFile);
   const record = verificationTokens.find(v=> v.token === token);
   if(!record) return res.status(400).json({error:'invalid token'});
-  const patient = patients.find(p=> p.id === record.patientId);
-  if(!patient) return res.status(400).json({error:'patient not found'});
-  patient.active = true;
-  write(patientsFile, patients);
+  const consumer = consumers.find(p=> p.id === record.consumerId);
+  if(!consumer) return res.status(400).json({error:'consumer not found'});
+  consumer.active = true;
+  write(consumersFile, consumers);
   const remaining = verificationTokens.filter(v=> v.token !== token);
-  write(verificationFile, remaining);
+  write(consumerVerificationFile, remaining);
   res.json({status:'verified'});
 });
 
-router.post('/patients/login',[body('email').isEmail(), body('password').notEmpty()], async (req,res)=>{
+router.post('/consumers/login',[body('email').isEmail(), body('password').notEmpty()], async (req,res)=>{
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
-  const patients = read(patientsFile);
-  const patient = patients.find(p=> p.email === req.body.email);
-  if(!patient) return res.status(401).json({error:'invalid credentials'});
-  if(!patient.active) return res.status(403).json({error:'not verified'});
-  const ok = await bcrypt.compare(req.body.password, patient.password);
+  const consumers = read(consumersFile);
+  const consumer = consumers.find(p=> p.email === req.body.email);
+  if(!consumer) return res.status(401).json({error:'invalid credentials'});
+  if(!consumer.active) return res.status(403).json({error:'not verified'});
+  const ok = await bcrypt.compare(req.body.password, consumer.password);
   if(!ok) return res.status(401).json({error:'invalid credentials'});
-  res.json({ id: patient.id, name: patient.name, email: patient.email, role:'patient' });
+  res.json({ id: consumer.id, name: consumer.name, email: consumer.email, role:'consumer' });
 });
 
 // ---------------- Protected routes ----------------
-router.get('/doctors', verifyTokenMiddleware, (req,res)=>{
-  res.json(read(doctorsFile));
+// ---------------- Provider (formerly doctor) public registration + listing ----------------
+router.get('/providers', verifyTokenMiddleware, (req,res)=>{
+  res.json(read(providersFile));
 });
 
-router.post('/doctors', verifyTokenMiddleware, [body('name').notEmpty()],async (req,res)=>{
+// Providers can self-register (public) with password (to allow login) or we can auto-generate one if omitted
+router.post('/providers', [
+  body('name').notEmpty(), 
+  body('email').isEmail(),
+  body('password').optional().isLength({min:8}).withMessage('Password must be at least 8 characters when provided')
+], async (req,res)=>{
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
-  const doctors = read(doctorsFile);
-  const doctor = { id: uuid(), rank: Math.floor(Math.random()*100), active: true, aiAgent: req.body.aiAgent || null, ...req.body };
-  doctors.push(doctor);
-  write(doctorsFile, doctors);
-  sendRegistrationEmail(doctor.email, 'doctor').catch(()=>{});
-  res.status(201).json(doctor);
+  const providers = read(providersFile);
+  if(providers.some(p=> p.email === req.body.email)) return res.status(400).json({message:'Email already registered.'});
+  let { password, ...rest } = req.body;
+  let generated = false;
+  if(!password){
+    password = crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
+    generated = true;
+  }
+  const hash = await bcrypt.hash(password,10);
+  const provider = { id: uuid(), role:'provider', active:true, password: hash, rank: Math.floor(Math.random()*100), aiAgent: rest.aiAgent || null, createdAt: Date.now(), ...rest };
+  providers.push(provider);
+  write(providersFile, providers);
+  sendRegistrationEmail(provider.email, 'provider').catch(()=>{});
+  const { password: _pw, ...sanitized } = provider;
+  res.status(201).json({ ...sanitized, tempPassword: generated ? password : undefined });
 });
 
-router.get('/patients', verifyTokenMiddleware, (req,res)=>{
-  res.json(read(patientsFile));
+router.get('/consumers', verifyTokenMiddleware, (req,res)=>{
+  res.json(read(consumersFile));
 });
 
 // Admin-only: create & activate patient directly (no email verification step)
-router.post('/patients/admin', verifyTokenMiddleware, [
+router.post('/consumers/admin', verifyTokenMiddleware, [
   body('name').notEmpty().withMessage('Name is required'),
   body('email').isEmail().withMessage('Valid email required'),
   body('password').optional().isLength({min:8}).withMessage('Password must be at least 8 characters when provided')
@@ -111,8 +131,8 @@ router.post('/patients/admin', verifyTokenMiddleware, [
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
 
-  const patients = read(patientsFile);
-  if(patients.some(p=> p.email === req.body.email)){
+  const consumers = read(consumersFile);
+  if(consumers.some(p=> p.email === req.body.email)){
     return res.status(400).json({message:'Email already registered.'});
   }
 
@@ -123,13 +143,22 @@ router.post('/patients/admin', verifyTokenMiddleware, [
     generated = true;
   }
   const hash = await bcrypt.hash(password,10);
-  const patient = { id: uuid(), active:true, password: hash, ...rest };
-  patients.push(patient);
-  write(patientsFile, patients);
-  // Optionally still send welcome email (without verification)
-  sendRegistrationEmail(patient.email, 'patient').catch(()=>{});
-  const { password: _pw, ...sanitized } = patient;
+  const consumer = { id: uuid(), role:'consumer', active:true, password: hash, ...rest };
+  consumers.push(consumer);
+  write(consumersFile, consumers);
+  sendRegistrationEmail(consumer.email, 'consumer').catch(()=>{});
+  const { password: _pw, ...sanitized } = consumer;
   res.status(201).json({ ...sanitized, tempPassword: generated ? password : undefined });
 });
+
+// ---------------- Backwards compatibility (legacy routes) ----------------
+// Keep old endpoints responding for now to avoid breaking existing clients (will be removed later)
+router.post('/patients', (req,res)=> res.status(410).json({message:'Route renamed to /consumers'}));
+router.post('/patients/verify', (req,res)=> res.status(410).json({message:'Route renamed to /consumers/verify'}));
+router.post('/patients/login', (req,res)=> res.status(410).json({message:'Route renamed to /consumers/login'}));
+router.get('/patients', (req,res)=> res.status(410).json({message:'Route renamed to /consumers'}));
+router.post('/patients/admin', (req,res)=> res.status(410).json({message:'Route renamed to /consumers/admin'}));
+router.get('/doctors', (req,res)=> res.status(410).json({message:'Route renamed to /providers'}));
+router.post('/doctors', (req,res)=> res.status(410).json({message:'Route renamed to /providers'}));
 
 export default router;

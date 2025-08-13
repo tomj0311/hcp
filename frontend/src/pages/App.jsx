@@ -37,8 +37,8 @@ export default function App(){
   },[]);
 
   const logout = ()=>{ setAuth(null); localStorage.removeItem('hcp_auth'); nav('/login'); };
-  const requestConsult = (doctor)=>{
-    nav(`/consult/${doctor.id}`, { state:{ doctor } });
+  const requestConsult = (provider)=>{
+    nav(`/consult/${provider.id}`, { state:{ provider } });
   };
 
   const [navCollapsed,setNavCollapsed] = useState(()=>{
