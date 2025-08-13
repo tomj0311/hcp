@@ -12,6 +12,7 @@ import DoctorRegistration from '../components/DoctorRegistration.jsx';
 import Pricing from '../components/Pricing.jsx';
 import SideNav, { getDrawerWidth } from '../components/SideNav.jsx';
 import Consultation from '../components/Consultation.jsx';
+import AdminLogin from '../components/AdminLogin.jsx';
 
 function ProtectedRoute({ auth, children }){
   if(!auth) return <Navigate to="/login" replace />;
@@ -48,7 +49,7 @@ export default function App(){
     try { return localStorage.getItem('hcp_nav_collapsed') === '1'; } catch { return false; }
   });
   const drawerWidth = getDrawerWidth(navCollapsed);
-  const showNav = auth && window.location.pathname !== '/login';
+  const showNav = auth && window.location.pathname !== '/login' && window.location.pathname !== '/adminLogin' && window.location.pathname !== '/signup';
   const isMobile = window.innerWidth < 768;
 
   return (
@@ -87,17 +88,20 @@ export default function App(){
           )}
           <Typography variant="h6" sx={{fontWeight:700, fontSize:{xs:'1.1rem', sm:'1.25rem'}}}>HealthCare Platform</Typography>
           <Box sx={{flexGrow:1}} />
-          {!auth && <Button component={Link} to="/login" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Login</Button>}
+          {!auth && <Button component={Link} to="/login" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Patient Login</Button>}
+          {!auth && <Button component={Link} to="/adminLogin" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Admin Login</Button>}
           {auth && <Button onClick={logout} color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Logout</Button>}
         </Toolbar>
     </AppBar>
     {/* Spacer to offset the fixed AppBar height so content never slides underneath */}
     <Toolbar sx={{ minHeight:{xs:56, sm:64}, mb: 0 }} />
   {showNav && <SideNav role={auth?.role} onLogout={logout} collapsed={navCollapsed} />}
-  <Box component="main" sx={{ flexGrow:1, ml: showNav && !isMobile? `${drawerWidth}px`:0, px:{xs:1, sm:2, md:3}, pb:{xs:3, md:6}, transition:'margin-left .25s ease', position:'relative', zIndex: 0 }}>
+  <Box component="main" sx={{ flexGrow:1, ml: showNav && !isMobile? `${drawerWidth}px`:0, px:{xs:1, sm:2, md:3}, pt:{xs:3, sm:4, md:5}, pb:{xs:3, md:6}, transition:'margin-left .25s ease', position:'relative', zIndex: 0 }}>
         <Routes>
           <Route path="/" element={<ProtectedRoute auth={auth}><Dashboard token={auth?.token} role={auth?.role} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} onRequestConsult={requestConsult} /></ProtectedRoute>} />
           <Route path="/login" element={auth? <Navigate to="/" replace />:<LoginForm onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
+          <Route path="/adminLogin" element={auth? <Navigate to="/" replace />:<AdminLogin onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
+          <Route path="/signup" element={auth? <Navigate to="/" replace />:<PatientRegistration />} />
           <Route path="/register" element={<AdminRoute auth={auth}><RegistrationForm /></AdminRoute>} />
           <Route path="/register/patient" element={<AdminRoute auth={auth}><PatientRegistration /></AdminRoute>} />
           <Route path="/register/doctor" element={<AdminRoute auth={auth}><DoctorRegistration /></AdminRoute>} />

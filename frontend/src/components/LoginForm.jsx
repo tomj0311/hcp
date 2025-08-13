@@ -1,40 +1,42 @@
 import React, { useState } from 'react';
-import { TextField, Button, Box, Typography, Paper, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { TextField, Button, Typography, Paper, Stack, Link as MuiLink } from '@mui/material';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 
 export default function LoginForm({ onLogin }){
-  const [username,setUsername] = useState('');
+  const [email,setEmail] = useState('');
   const [password,setPassword] = useState('');
   const [error,setError] = useState(null);
-  const [loginType,setLoginType] = useState('admin');
+  const [loading,setLoading] = useState(false);
 
   const submit = async (e)=>{
     e.preventDefault();
+    setError(null); setLoading(true);
     try {
-      let payload;
-      if(loginType==='patient'){
-        payload = { username, password }; // username treated as email on backend
+      const res = await axios.post(import.meta.env.VITE_API_URL + '/auth/login', { username: email, password });
+      if(res.data.role === 'admin'){
+        setError('Use admin login page for admin accounts');
       } else {
-        payload = { username, password };
+        onLogin(res.data);
       }
-      const res = await axios.post(import.meta.env.VITE_API_URL + '/auth/login', payload);
-      onLogin(res.data);
-    } catch(e){
-  setError('Invalid credentials');
-    }
+    } catch(e){ setError('Invalid credentials'); } finally { setLoading(false); }
   };
 
   return (
-    <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:4}, maxWidth:{xs:350, sm:420}, mx:'auto', mt:{xs:4, sm:6, md:10}, boxShadow:(theme)=> theme.palette.mode==='dark'? '0 4px 24px -8px rgba(0,0,0,0.6)':'0 4px 20px -6px rgba(0,0,0,0.08)'}} aria-label="Login form">
-      <Typography variant="h5" gutterBottom sx={{fontWeight:700, mb:3, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>Sign In</Typography>
-      <ToggleButtonGroup exclusive value={loginType} onChange={(e,val)=> val && setLoginType(val)} fullWidth size="small" sx={{mb:1, '& .MuiToggleButton-root':{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}} aria-label="login type">
-        <ToggleButton value="admin" data-role="login-admin-mode">Admin</ToggleButton>
-        <ToggleButton value="patient" data-role="login-patient-mode">Patient</ToggleButton>
-      </ToggleButtonGroup>
-      <TextField label={loginType==='patient' ? 'Email' : 'Username'} fullWidth margin="normal" value={username} onChange={e=>setUsername(e.target.value)} required inputProps={{'aria-label':'username'}} size={window.innerWidth < 600 ? 'small' : 'medium'} />
-      <TextField label="Password" type="password" fullWidth margin="normal" value={password} onChange={e=>setPassword(e.target.value)} required inputProps={{'aria-label':'password'}} size={window.innerWidth < 600 ? 'small' : 'medium'} />
-      {error && <Typography color="error" role="alert" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>{error}</Typography>}
-  <Button variant="contained" fullWidth type="submit" sx={{mt:3, py:{xs:1, sm:1.1}, fontSize:{xs:'0.85rem', sm:'0.875rem'}}} aria-label="login button">Login</Button>
+    <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:4}, maxWidth:{xs:360, sm:420}, mx:'auto', mt:{xs:2, sm:3}, boxShadow:(theme)=> theme.palette.mode==='dark'? '0 6px 26px -10px rgba(0,0,0,0.6)':'0 6px 24px -8px rgba(0,0,0,0.08)'}} aria-label="Patient login form">
+      <Typography variant="h5" sx={{fontWeight:700, mb:3, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>Patient Sign In</Typography>
+      <Stack spacing={2}>
+        <TextField label="Email" type="email" fullWidth value={email} onChange={e=> setEmail(e.target.value)} required size={window.innerWidth < 600 ? 'small' : 'medium'} inputProps={{'aria-label':'username'}} />
+        <TextField label="Password" type="password" fullWidth value={password} onChange={e=> setPassword(e.target.value)} required size={window.innerWidth < 600 ? 'small' : 'medium'} inputProps={{'aria-label':'password'}} />
+        {error && <Typography color="error" role="alert" sx={{fontSize:{xs:'0.75rem', sm:'0.8rem'}}}>{error}</Typography>}
+        <Button variant="contained" fullWidth type="submit" disabled={loading} sx={{mt:1, py:{xs:1, sm:1.1}, fontSize:{xs:'0.85rem', sm:'0.875rem'}}} aria-label="login button">{loading? 'Signing in...':'Login'}</Button>
+        <Typography variant="caption" sx={{textAlign:'center', mt:1, fontSize:{xs:'0.65rem', sm:'0.7rem'}}} color="text.secondary">
+          New here? <MuiLink component={Link} to="/signup" underline="hover">Create an account</MuiLink>
+        </Typography>
+        <Typography variant="caption" sx={{textAlign:'center', fontSize:{xs:'0.65rem', sm:'0.7rem'}}} color="text.secondary">
+          Admin? <MuiLink component={Link} to="/adminLogin" underline="hover">Admin Sign In</MuiLink>
+        </Typography>
+      </Stack>
     </Paper>
   );
 }

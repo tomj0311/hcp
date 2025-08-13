@@ -22,7 +22,7 @@ export default function DoctorRegistration(){
   };
 
   return (
-    <Paper sx={{p:{xs:3, md:5}, maxWidth:{xs:350, sm:900}, mx:'auto', mt:{xs:2, sm:4, md:6}, boxShadow:(theme)=> theme.palette.mode==='dark'? '0 6px 28px -8px rgba(0,0,0,0.7)':'0 6px 24px -8px rgba(0,0,0,0.1)'}}>
+    <Paper sx={{p:{xs:3, md:5}, maxWidth:{xs:350, sm:900}, mx:'auto', mt:{xs:1, sm:2}, boxShadow:(theme)=> theme.palette.mode==='dark'? '0 6px 28px -8px rgba(0,0,0,0.7)':'0 6px 24px -8px rgba(0,0,0,0.1)'}}>
       <Typography variant="h5" sx={{fontWeight:700, mb:3, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>Doctor Registration</Typography>
       {status && <Alert severity={status.includes('failed')?'error':'success'} sx={{mb:2}}>{status}</Alert>}
       <Box component="form" onSubmit={submit} noValidate>

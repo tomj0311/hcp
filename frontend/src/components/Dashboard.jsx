@@ -30,7 +30,7 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
   },[]);
 
   return (
-    <Box sx={{mt:{xs:2, md:3}, px:{xs:1, sm:0}}}>
+    <Box sx={{px:{xs:1, sm:0}}}>
       <Stack direction={{xs:'column', sm:'row'}} justifyContent="space-between" alignItems={{xs:'flex-start', sm:'center'}} spacing={{xs:2, sm:0}} sx={{mb:3}}>
 	  <Typography variant="h5" sx={{fontWeight:700, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>{role==='patient'? 'Patient Dashboard':'Admin Dashboard'}</Typography>
         <Stack direction="row" spacing={1} alignItems="center">

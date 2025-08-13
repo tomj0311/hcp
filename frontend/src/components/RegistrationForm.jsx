@@ -34,7 +34,7 @@ export default function RegistrationForm(){
   };
 
   return (
-    <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:4}, maxWidth:{xs:350, sm:600}, mx:'auto', mt:{xs:2, sm:3}, mb:{xs:2, sm:0}}}>
+    <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:4}, maxWidth:{xs:350, sm:600}, mx:'auto', mt:{xs:1, sm:2}, mb:{xs:2, sm:0}}}>
       <Typography variant="h6" gutterBottom sx={{fontSize:{xs:'1.1rem', sm:'1.25rem'}}}>Register as Doctor or Patient</Typography>
       <ToggleButtonGroup value={role} exclusive onChange={(e,val)=> val && setRole(val)} aria-label="role select" fullWidth sx={{'& .MuiToggleButton-root':{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}}>
         <ToggleButton value="patient" aria-label="patient" data-role="register-patient-mode">Patient</ToggleButton>

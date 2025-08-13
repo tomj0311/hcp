@@ -15,7 +15,7 @@ export default function Pricing(){
     if(res.data.url) window.location.href = res.data.url;
   };
   return (
-    <Box sx={{mt:{xs:2, sm:4, md:6}, px:{xs:1, sm:2}}}>
+    <Box sx={{px:{xs:1, sm:2}}}>
       <Typography variant="h4" sx={{fontWeight:700, mb:{xs:3, md:5}, fontSize:{xs:'1.8rem', sm:'2.125rem'}}} align="center">Pricing</Typography>
       <Grid container spacing={{xs:2, sm:3, md:4}} sx={{mt:1, justifyContent:'center'}}>
         {tiers.map(t => (
