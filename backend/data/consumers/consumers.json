@@ -1,0 +1,21 @@
+[
+  {
+    "id": "8da88b60-affe-43c4-93b1-c074b57dc1c3",
+    "role": "consumer",
+    "active": true,
+    "password": "$2b$10$Zj7jwlyS4hkNknWcTPcwhO9a8yDQoM2vdHR2R8hRxXxuaB7EahWdm",
+    "createdAt": 1755078209978,
+    "firstName": "Tom",
+    "lastName": "Jose",
+    "name": "Tom Jose",
+    "phone": "+9719710303687",
+    "address1": "Reem Island",
+    "address2": "",
+    "city": "",
+    "state": "Abudhabi",
+    "postalCode": "",
+    "country": "AE",
+    "email": "tomj0311@gmail.com",
+    "emailOriginal": "tomj0311@gmail.com"
+  }
+]

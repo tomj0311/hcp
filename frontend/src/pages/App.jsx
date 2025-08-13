@@ -1,8 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { ThemeProvider, CssBaseline, AppBar, Toolbar, Typography, Box, Button, IconButton, Tooltip } from '@mui/material';
-import MenuIcon from '@mui/icons-material/Menu';
-import MenuOpenIcon from '@mui/icons-material/MenuOpen';
+import { ThemeProvider, CssBaseline, AppBar, Toolbar, Typography, Box, Button, IconButton } from '@mui/material';
+import { Menu, PanelLeftClose } from 'lucide-react';
 import { buildTheme } from '../theme/theme.js';
 import LoginForm from '../components/LoginForm.jsx';
 import Dashboard from '../components/Dashboard.jsx';
@@ -13,6 +12,7 @@ import SideNav, { getDrawerWidth } from '../components/SideNav.jsx';
 import Consultation from '../components/Consultation.jsx';
 import AdminLogin from '../components/AdminLogin.jsx';
 import EmailVerify from '../components/EmailVerify.jsx';
+import Meetups from '../components/Meetups.jsx';
 
 function ProtectedRoute({ auth, children }){
   if(!auth) return <Navigate to="/login" replace />;
@@ -39,8 +39,9 @@ export default function App(){
   },[]);
 
   const logout = ()=>{ setAuth(null); localStorage.removeItem('hcp_auth'); nav('/login'); };
+  // When selecting a provider, redirect to Meetups page to schedule an event
   const requestConsult = (provider)=>{
-    nav(`/consult/${provider.id}`, { state:{ provider } });
+    nav('/meetups', { state: { newMeetupFor: { id: provider.id, name: provider.name } } });
   };
 
   const [navCollapsed,setNavCollapsed] = useState(()=>{
@@ -71,20 +72,18 @@ export default function App(){
       >
         <Toolbar sx={{minHeight:{xs:56, sm:64}}}>
           {showNav && (
-            <Tooltip title={navCollapsed ? 'Expand navigation' : 'Collapse navigation'}>
-              <IconButton 
-                edge="start" 
-                onClick={() => setNavCollapsed(c => { 
-                  const next = !c; 
-                  try { localStorage.setItem('hcp_nav_collapsed', next ? '1' : '0'); } catch {} 
-                  return next; 
-                })}
-                sx={{ mr: 2 }}
-                aria-label={navCollapsed ? 'Expand navigation' : 'Collapse navigation'}
-              >
-                {navCollapsed ? <MenuIcon /> : <MenuOpenIcon />}
-              </IconButton>
-            </Tooltip>
+            <IconButton
+              edge="start"
+              onClick={() => setNavCollapsed(c => { 
+                const next = !c; 
+                try { localStorage.setItem('hcp_nav_collapsed', next ? '1' : '0'); } catch {} 
+                return next; 
+              })}
+              sx={{ mr: 2 }}
+              aria-label={navCollapsed ? 'Expand navigation' : 'Collapse navigation'}
+            >
+              {navCollapsed ? <Menu size={20} /> : <PanelLeftClose size={20} />}
+            </IconButton>
           )}
           <Typography variant="h6" sx={{fontWeight:700, fontSize:{xs:'1.1rem', sm:'1.25rem'}}}>HealthCare Platform</Typography>
           <Box sx={{flexGrow:1}} />
@@ -107,6 +106,7 @@ export default function App(){
           <Route path="/register/provider" element={<AdminRoute auth={auth}><ProviderRegistration admin token={auth?.token} /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/consult/:id" element={<ProtectedRoute auth={auth}><Consultation /></ProtectedRoute>} />
+          <Route path="/meetups" element={<ProtectedRoute auth={auth}><Meetups auth={auth} /></ProtectedRoute>} />
           <Route path="/verify" element={<EmailVerify />} />
           <Route path="*" element={<Typography>Not Found</Typography>} />
         </Routes>

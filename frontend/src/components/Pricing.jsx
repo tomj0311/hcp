@@ -1,6 +1,6 @@
 import React from 'react';
 import { Grid, Card, CardContent, Typography, Button, List, ListItem, ListItemIcon, ListItemText, Chip, Box } from '@mui/material';
-import CheckIcon from '@mui/icons-material/CheckCircleOutline';
+import { CheckCircle as CheckIcon } from 'lucide-react';
 import axios from 'axios';
 
 const tiers = [

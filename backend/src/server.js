@@ -12,6 +12,7 @@ import authRouter from './routes/auth.js';
 import userRouter from './routes/users.js';
 import paymentRouter from './routes/payments.js';
 import uploadsRouter from './routes/uploads.js';
+import meetupsRouter from './routes/meetups.js';
 import { initMatchmaking } from './ws/matchmaking.js';
 import { verifyTokenMiddleware } from './utils/auth.js';
 import { seedProviders } from './services/seedProviders.js';
@@ -51,6 +52,7 @@ app.use('/auth', authRouter);
 app.use('/users', userRouter);
 app.use('/payments', verifyTokenMiddleware, paymentRouter);
 app.use('/uploads', uploadsRouter);
+app.use('/meetups', meetupsRouter);
 
 // simple temp storage
 if(!fs.existsSync(path.join(__dirname,'..','data'))){

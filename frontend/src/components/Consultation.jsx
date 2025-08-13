@@ -20,17 +20,7 @@ import {
   Card,
   CardContent
 } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import SendIcon from '@mui/icons-material/Send';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import MicIcon from '@mui/icons-material/Mic';
-import MicOffIcon from '@mui/icons-material/MicOff';
-import VideocamIcon from '@mui/icons-material/Videocam';
-import VideocamOffIcon from '@mui/icons-material/VideocamOff';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteIcon from '@mui/icons-material/Delete';
-import SettingsIcon from '@mui/icons-material/Settings';
+import { ArrowLeft as ArrowBackIcon, Send as SendIcon, MessageCircle as ChatBubbleOutlineIcon, Mic as MicIcon, MicOff as MicOffIcon, Video as VideocamIcon, VideoOff as VideocamOffIcon, Paperclip as AttachFileIcon, UploadCloud as CloudUploadIcon, Trash2 as DeleteIcon, Settings as SettingsIcon } from 'lucide-react';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -43,7 +33,11 @@ export default function Consultation(){
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  
   const [provider,setProvider] = useState(location.state?.provider || null);
+  const meetupId = location.state?.meetupId || null;
+  const [meetup,setMeetup] = useState(null);
+  const [meetupError,setMeetupError] = useState('');
   const [loading,setLoading] = useState(!provider);
   const [channel,setChannel] = useState('video'); // Default to video first
   const [messages,setMessages] = useState(()=>[
@@ -79,12 +73,17 @@ export default function Consultation(){
 
   // Fetch provider if not in navigation state (deep-link support)
   useEffect(()=>{
+  // Debug initial state
+  // eslint-disable-next-line no-console
+  console.debug('[Consultation] init', { routeId:id, meetupId, providerFromState: !!location.state?.provider });
   if(!provider){
       (async()=>{
         try {
+      console.debug('[Consultation] fetching providers list to resolve id');
       const res = await axios.get(import.meta.env.VITE_API_URL + '/users/providers', { headers: { Authorization: `Bearer ${localStorage.getItem('hcp_auth')? JSON.parse(localStorage.getItem('hcp_auth')).token: ''}` }});
       const found = res.data.find(d=> String(d.id) === String(id));
       if(found) setProvider(found);
+      else console.warn('[Consultation] provider not found for id', id);
         } catch(e){ /* silent */ }
         setLoading(false);
       })();
@@ -92,6 +91,24 @@ export default function Consultation(){
       setLoading(false);
     }
   },[provider,id]);
+
+  // Fetch meetup details if meetupId provided (adds context & helps debugging)
+  useEffect(()=>{
+    if(!meetupId) return;
+    let cancelled = false;
+    (async()=>{
+      try {
+        setMeetupError('');
+        const authRaw = localStorage.getItem('hcp_auth');
+        const token = authRaw? JSON.parse(authRaw).token : '';
+        const res = await axios.get(import.meta.env.VITE_API_URL + '/meetups/' + meetupId, { headers:{ Authorization: `Bearer ${token}` }});
+        if(!cancelled) setMeetup(res.data);
+      } catch(err){
+        if(!cancelled) setMeetupError(err?.response?.data?.error || 'Failed to load meetup');
+      }
+    })();
+    return ()=> { cancelled = true; };
+  },[meetupId]);
 
   // Only auto-scroll after initial mount to avoid jumping page to bottom when component first loads
   useEffect(()=>{
@@ -459,12 +476,17 @@ export default function Consultation(){
         flexDirection:'column',
         flex:1,
         minHeight:0,
-        borderRadius: { xs:2, sm:3 }
+        // Use theme's default Paper border radius (will be 8 from theme)
       }} aria-label="consultation chat panel">
   <Stack direction="row" spacing={{ xs:0.5, sm:1 }} alignItems="center" sx={{mb:{ xs:1.5, sm:2 }}}>
           <Tooltip title="Back to dashboard"><IconButton aria-label="back" onClick={()=> navigate('/')} size="large"><ArrowBackIcon fontSize="large" /></IconButton></Tooltip>
           <Typography variant="h5" sx={{fontWeight:700, fontSize:{xs:'1.2rem', sm:'1.4rem'}}}>Video Consultation</Typography>
           <Box component="span" sx={{ml:1, opacity:0.8, fontSize:{xs:'0.9rem', sm:'1rem'}, fontWeight:500}}>{provider? `with ${provider.name}` : (loading? 'Loading...' : 'Unknown')}</Box>
+          {meetupId && (
+            <Box component="span" sx={{ml:2, fontSize:{xs:'0.65rem', sm:'0.7rem'}, px:1, py:0.5, borderRadius:1, bgcolor:'action.hover'}}>
+              {meetupError? `Meetup: ${meetupError}` : (meetup? `Meetup ${new Date(meetup.start).toLocaleString()}` : 'Loading meetup...')}
+            </Box>
+          )}
           <Box sx={{flexGrow:1}} />
           <Tooltip title="Media settings">
             <IconButton 
@@ -623,7 +645,7 @@ export default function Consultation(){
           {channel==='video' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               {/* Video Call Interface */}
-              <Box sx={({palette})=>({
+              <Box sx={(theme)=>({
                 mb: 2,
                 p: { xs:2, sm:3 },
                 display: 'flex',
@@ -631,12 +653,12 @@ export default function Consultation(){
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                borderRadius: 3,
+                borderRadius: theme.custom?.radii?.card || 8,
                 minHeight: { xs: 240, sm: 340, md: 400 },
-                background: palette.mode==='dark'
+                background: theme.palette.mode==='dark'
                   ? 'linear-gradient(135deg,#1f1f1f 0%,#141414 65%)'
                   : 'linear-gradient(135deg,#e3f2fd 0%,#bbdefb 65%)',
-                boxShadow: palette.mode==='dark'? 'inset 0 0 0 1px #262626' : 'inset 0 0 0 1px #d5dbe3',
+                boxShadow: theme.palette.mode==='dark'? 'inset 0 0 0 1px #262626' : 'inset 0 0 0 1px #d5dbe3',
                 position: 'relative',
                 overflow: 'hidden'
               })} aria-label="video call interface">

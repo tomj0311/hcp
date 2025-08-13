@@ -22,7 +22,8 @@ export const getDesignTokens = (mode) => ({
       paper: mode==='dark' ? '#1e1e1e' : '#ffffff'
     }
   },
-  shape: { borderRadius: 10 },
+  // Keep base shape radius smaller and define custom token for cards
+  shape: { borderRadius: 8 },
   spacing: 8,
   typography: {
     fontFamily: 'Roboto, Arial, sans-serif',
@@ -76,13 +77,44 @@ export const getDesignTokens = (mode) => ({
     },
     MuiPaper: {
       styleOverrides: {
-        root: ({ ownerState, theme }) => ({
+        root: ({ theme }) => ({
           backgroundImage: 'none',
-          borderRadius: theme.shape.borderRadius + 2,
+          // Unified card/container radius
+          borderRadius: theme.custom?.radii?.card || 8,
           transition: 'background-color .25s ease, box-shadow .25s ease, border-color .25s ease',
           border: theme.palette.mode==='dark'? '1px solid #262626':'1px solid #e5e8ef',
           backgroundColor: theme.palette.mode==='dark' ? '#1b1b1b' : '#ffffff',
         })
+      }
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: theme.custom?.radii?.card || 8,
+        })
+      }
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 8,
+          }
+        }
+      }
+    },
+    MuiAlert: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        }
+      }
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16, // Keep chips more rounded but not excessive
+        }
       }
     },
     MuiButton: {
@@ -111,6 +143,8 @@ export const getDesignTokens = (mode) => ({
     }
   },
   custom: {
+    // Doubled card radius from 4 -> 8
+    radii: { card: 8 },
     tiles: {
       image: {
         bg: 'linear-gradient(135deg,#0582ff 0%,#3fa9ff 60%,#7fc8ff 100%)',

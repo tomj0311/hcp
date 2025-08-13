@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Box, Typography, Grid, Paper, Stack, IconButton, Switch, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import RefreshIcon from '@mui/icons-material/Refresh';
+import { RefreshCw as RefreshIcon } from 'lucide-react';
 import ProviderCard from './ProviderCard.jsx';
 import axios from 'axios';
 
@@ -94,7 +94,7 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
           <Grid item xs={12} md={6}>
             <Paper sx={({custom})=>({p:{xs:2, sm:3}, mb:{xs:2, sm:3}, background:custom.tiles.image.bg, color:custom.tiles.image.fg, boxShadow:'0 6px 26px -10px rgba(0,0,0,0.35)'})}>
               <Typography variant="h6" sx={{fontWeight:700, fontSize:{xs:'1rem', sm:'1.25rem'}}}>Find a Provider</Typography>
-              <Typography variant="body2" sx={{opacity:0.9, fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Tap a provider card to request a session.</Typography>
+              <Typography variant="body2" sx={{opacity:0.9, fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Tap a provider card to schedule a meetup.</Typography>
               <Button variant="contained" size="small" sx={{mt:2, color:'black', bgcolor:'rgba(255,255,255,0.9)', '&:hover':{bgcolor:'white'}, fontSize:{xs:'0.75rem', sm:'0.875rem'}}} onClick={loadProviders}>Refresh List</Button>
             </Paper>
           </Grid>

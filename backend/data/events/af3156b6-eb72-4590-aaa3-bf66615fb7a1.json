@@ -1,0 +1,14 @@
+{
+  "id": "af3156b6-eb72-4590-aaa3-bf66615fb7a1",
+  "type": "meetup",
+  "title": "test",
+  "description": "test",
+  "start": "2025-08-13T10:20:00.000Z",
+  "end": "2025-08-13T11:20:00.000Z",
+  "createdAt": 1755080442411,
+  "requesterId": "8da88b60-affe-43c4-93b1-c074b57dc1c3",
+  "requesterRole": "consumer",
+  "participantId": "c6e67418-56ad-49ac-a9fa-b7d03ce7fdd1",
+  "participantRole": "provider",
+  "status": "scheduled"
+}
