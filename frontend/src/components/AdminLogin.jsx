@@ -33,7 +33,7 @@ export default function AdminLogin({ onLogin }){
         {error && <Typography color="error" sx={{fontSize:{xs:'0.75rem', sm:'0.8rem'}}} role="alert">{error}</Typography>}
         <Button variant="contained" type="submit" fullWidth disabled={loading} sx={{py:{xs:1, sm:1.1}, fontSize:{xs:'0.85rem', sm:'0.9rem'}}} aria-label="admin login button">{loading? 'Signing in...':'Login'}</Button>
         <Typography variant="caption" color="text.secondary" sx={{textAlign:'center', mt:1, fontSize:{xs:'0.65rem', sm:'0.7rem'}}}>
-          Need patient access? <MuiLink component={Link} to="/login">Patient Sign In</MuiLink>
+          Need consumer access? <MuiLink component={Link} to="/login">Consumer Sign In</MuiLink>
         </Typography>
       </Stack>
     </Paper>

@@ -25,9 +25,9 @@ export default function SideNav({ role, onLogout, collapsed }) {
     role === 'admin' ? {
       heading: 'MANAGEMENT',
       items: [
-  { label: 'Doctors', icon: <Hospital size={18} strokeWidth={1.7} />, to: '/register/doctor' },
-  { label: 'Patients', icon: <Users size={18} strokeWidth={1.7} />, to: '/register/patient' },
-  { label: 'Legacy Register', icon: <UserPlus size={18} strokeWidth={1.7} />, to: '/register', badge: 'LEGACY' }
+  { label: 'Providers', icon: <Hospital size={18} strokeWidth={1.7} />, to: '/register/provider' },
+  { label: 'Consumers', icon: <Users size={18} strokeWidth={1.7} />, to: '/register/consumer' },
+  { label: 'Register', icon: <UserPlus size={18} strokeWidth={1.7} />, to: '/register' }
       ]
     } : null
   ].filter(Boolean);

@@ -75,6 +75,7 @@ export default function Consultation(){
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const videoContainerRef = useRef(null);
+  const initialAutoScrollSkippedRef = useRef(false);
 
   // Fetch doctor if not in navigation state (deep-link support)
   useEffect(()=>{
@@ -92,7 +93,16 @@ export default function Consultation(){
     }
   },[doctor,id]);
 
-  useEffect(()=>{ chatEndRef.current?.scrollIntoView({behavior:'smooth'}); },[messages]);
+  // Only auto-scroll after initial mount to avoid jumping page to bottom when component first loads
+  useEffect(()=>{
+    if(!initialAutoScrollSkippedRef.current){
+      initialAutoScrollSkippedRef.current = true; // skip first render
+      return;
+    }
+    chatEndRef.current?.scrollIntoView({behavior:'smooth'});
+  },[messages]);
+
+  // No overlay measurement; allow natural document flow.
 
   // Media control functions
   const requestMediaPermissions = async (audio = false, video = false) => {
@@ -375,28 +385,37 @@ export default function Consultation(){
   };
 
   return (
-    <Box sx={{display:'flex', flexDirection:'column', height:'calc(100vh - 140px)'}}>
-      {/* Floating Video Preview - Always visible when camera is enabled */}
-      {cameraEnabled && (
+    <Box sx={{
+      display:'flex',
+      flexDirection:'column',
+      width:'100%',
+      maxWidth:{ xs:'100%', lg: 1400 },
+      mx:'auto',
+      px:{ xs:1, sm:2 },
+      boxSizing:'border-box'
+    }}>
+      {/* Floating Video Preview - anchors bottom-right when settings open */}
+  {cameraEnabled && (
         <Box 
           ref={videoContainerRef}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           sx={{ 
             position: 'fixed',
-            left: videoPosition.x,
-            top: videoPosition.y,
-            width: { xs: 120, sm: 160 }, 
-            height: { xs: 120, sm: 160 },
+            ...(showMediaSettings
+              ? { right: 16, bottom: 16 }
+              : { left: videoPosition.x, top: videoPosition.y }),
+    width: micEnabled ? { xs: 120, sm: 160, md: 190 } : { xs: 96, sm: 130, md: 160 },
+    height: micEnabled ? { xs: 120, sm: 160, md: 190 } : { xs: 96, sm: 130, md: 160 },
             borderRadius: '50%',
             overflow: 'hidden',
             border: '3px solid',
             borderColor: 'primary.main',
             boxShadow: isDragging ? 6 : 3,
-            cursor: isDragging ? 'grabbing' : 'grab',
+            cursor: showMediaSettings ? 'default' : (isDragging ? 'grabbing' : 'grab'),
             zIndex: 9999,
             userSelect: 'none',
-            transition: isDragging ? 'none' : 'box-shadow 0.2s ease',
+            transition: isDragging ? 'none' : 'box-shadow 0.2s ease, width 0.25s cubic-bezier(0.4,0,0.2,1), height 0.25s cubic-bezier(0.4,0,0.2,1)',
             '&:hover': {
               boxShadow: 4
             }
@@ -434,8 +453,15 @@ export default function Consultation(){
         </Box>
       )}
 
-      <Paper elevation={0} sx={{p:{xs:2, sm:3}, display:'flex', flexDirection:'column', flex:1, minHeight:0}} aria-label="consultation chat panel">
-        <Stack direction="row" spacing={1} alignItems="center" sx={{mb:2}}>
+      <Paper elevation={0} sx={{
+        p:{xs:1.5, sm:2.5, md:3},
+        display:'flex',
+        flexDirection:'column',
+        flex:1,
+        minHeight:0,
+        borderRadius: { xs:2, sm:3 }
+      }} aria-label="consultation chat panel">
+  <Stack direction="row" spacing={{ xs:0.5, sm:1 }} alignItems="center" sx={{mb:{ xs:1.5, sm:2 }}}>
           <Tooltip title="Back to dashboard"><IconButton aria-label="back" onClick={()=> navigate('/')} size="large"><ArrowBackIcon fontSize="large" /></IconButton></Tooltip>
           <Typography variant="h5" sx={{fontWeight:700, fontSize:{xs:'1.2rem', sm:'1.4rem'}}}>Video Consultation</Typography>
           <Box component="span" sx={{ml:1, opacity:0.8, fontSize:{xs:'0.9rem', sm:'1rem'}, fontWeight:500}}>{doctor? `with Dr. ${doctor.name}` : (loading? 'Loading...' : 'Unknown')}</Box>
@@ -451,8 +477,7 @@ export default function Consultation(){
             </IconButton>
           </Tooltip>
         </Stack>
-
-        {/* Media Settings Panel */}
+        {/* Media Settings Panel inline (pushes content, allows full growth) */}
         {showMediaSettings && (
           <Card sx={{ mb: 2, bgcolor: 'background.paper' }}>
             <CardContent sx={{ py: 2 }}>
@@ -512,7 +537,7 @@ export default function Consultation(){
         )}
 
         {/* Enhanced Tab Navigation with larger, more accessible tabs */}
-        <Tabs 
+  <Tabs 
           value={channel} 
           onChange={(e,v)=> setChannel(v)} 
           aria-label="consultation mode selector" 
@@ -554,7 +579,14 @@ export default function Consultation(){
         </Tabs>
         <Divider sx={{mb:2}} />
         {/* Messages / Content Area */}
-        <Box sx={{flexGrow:1, overflowY:'auto', pr:1}} aria-label="conversation area">
+        <Box sx={{
+          flexGrow:1,
+          overflowY:'auto',
+          pr:{ xs:0.5, sm:1 },
+          scrollbarWidth:'thin',
+          '&::-webkit-scrollbar': { width: 8 },
+          '&::-webkit-scrollbar-thumb': { backgroundColor:'rgba(0,0,0,0.2)', borderRadius:4 }
+        }} aria-label="conversation area">
           {channel==='voice' && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Avatar sx={{ 
@@ -593,14 +625,14 @@ export default function Consultation(){
               {/* Video Call Interface */}
               <Box sx={({palette})=>({
                 mb: 2,
-                p: 3,
+                p: { xs:2, sm:3 },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
                 borderRadius: 3,
-                minHeight: { xs: 300, sm: 400 },
+                minHeight: { xs: 240, sm: 340, md: 400 },
                 background: palette.mode==='dark'
                   ? 'linear-gradient(135deg,#1f1f1f 0%,#141414 65%)'
                   : 'linear-gradient(135deg,#e3f2fd 0%,#bbdefb 65%)',
@@ -609,63 +641,7 @@ export default function Consultation(){
                 overflow: 'hidden'
               })} aria-label="video call interface">
                 
-                {/* Floating Draggable User's Video Preview */}
-                {cameraEnabled && (
-                  <Box 
-                    ref={videoContainerRef}
-                    onMouseDown={handleMouseDown}
-                    onTouchStart={handleTouchStart}
-                    sx={{ 
-                      position: 'fixed', // Changed from absolute to fixed for screen-wide positioning
-                      left: videoPosition.x,
-                      top: videoPosition.y,
-                      width: { xs: 120, sm: 160 }, 
-                      height: { xs: 120, sm: 160 },
-                      borderRadius: '50%',
-                      overflow: 'hidden',
-                      border: '3px solid',
-                      borderColor: 'primary.main',
-                      boxShadow: isDragging ? 6 : 3,
-                      cursor: isDragging ? 'grabbing' : 'grab',
-                      zIndex: 9999, // High z-index to appear above everything
-                      userSelect: 'none',
-                      transition: isDragging ? 'none' : 'box-shadow 0.2s ease',
-                      '&:hover': {
-                        boxShadow: 4
-                      }
-                    }}
-                  >
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'cover',
-                        transform: 'scaleX(-1)', // Mirror effect
-                        pointerEvents: 'none' // Prevent video from interfering with drag
-                      }}
-                    />
-                    <Typography variant="caption" sx={{ 
-                      position: 'absolute', 
-                      bottom: 8, 
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      color: 'white',
-                      backgroundColor: 'rgba(0,0,0,0.7)',
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 2,
-                      fontSize: '0.7rem',
-                      fontWeight: 500,
-                      pointerEvents: 'none'
-                    }}>
-                      You
-                    </Typography>
-                  </Box>
-                )}
+                {/* (Floating preview handled globally outside this container) */}
                 
                 {/* Doctor's Video Placeholder */}
                 <Avatar sx={{
@@ -679,7 +655,7 @@ export default function Consultation(){
                 </Typography>
                 
                 {/* Video Controls */}
-                <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+                <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap:'wrap', justifyContent:'center', rowGap:1 }}>
                   <Button
                     variant={cameraEnabled ? "contained" : "outlined"}
                     size="large"
@@ -719,7 +695,7 @@ export default function Consultation(){
               </Box>
               
               {/* Chat Messages for Video Mode - separate scrollable area */}
-              <Box sx={{ flexGrow: 1, overflowY: 'auto', maxHeight: 200 }}>
+              <Box sx={{ flexGrow: 1, overflowY: 'auto', maxHeight: { xs: 160, sm: 200 }, pr:0.5 }}>
                 {messages.map(m=> (
                   <Stack key={m.id} alignItems={m.role==='user'? 'flex-end':'flex-start'} sx={{mb:1.5}}>
                     <Paper variant="outlined" sx={({palette})=>({
@@ -865,7 +841,7 @@ export default function Consultation(){
         <Divider sx={{my:2}} />
         
         {/* Enhanced Chat Input with larger, more accessible controls */}
-        <Stack direction="row" spacing={2} alignItems="center" component="form" onSubmit={(e)=>{e.preventDefault(); sendMessage();}} aria-label="chat input form">
+  <Stack direction="row" spacing={{ xs:1, sm:2 }} alignItems="center" component="form" onSubmit={(e)=>{e.preventDefault(); sendMessage();}} aria-label="chat input form" sx={{ mt:{ xs:1, sm:2 } }}>
           <input
             type="file"
             ref={fileInputRef}
@@ -882,8 +858,8 @@ export default function Consultation(){
             size="large"
             sx={{
               borderRadius: '50%',
-              width: 48,
-              height: 48,
+              width: { xs:42, sm:48 },
+              height: { xs:42, sm:48 },
               border: '2px solid',
               borderColor: 'primary.main',
               bgcolor: 'background.paper',
@@ -920,7 +896,7 @@ export default function Consultation(){
               }
             }}
           />
-          <IconButton 
+      <IconButton 
             color="primary" 
             type="submit" 
             aria-label="send message" 
@@ -928,8 +904,8 @@ export default function Consultation(){
             size="large"
             sx={{
               borderRadius: '50%',
-              width: 48,
-              height: 48,
+        width: { xs:42, sm:48 },
+        height: { xs:42, sm:48 },
               border: '2px solid',
               borderColor: 'primary.main',
               bgcolor: input.trim() ? 'primary.main' : 'background.paper',
