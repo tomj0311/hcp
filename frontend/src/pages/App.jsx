@@ -6,9 +6,7 @@ import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import { buildTheme } from '../theme/theme.js';
 import LoginForm from '../components/LoginForm.jsx';
 import Dashboard from '../components/Dashboard.jsx';
-import RegistrationForm from '../components/RegistrationForm.jsx';
-import PatientRegistration from '../components/PatientRegistration.jsx';
-import DoctorRegistration from '../components/DoctorRegistration.jsx';
+import GenericRegistration from '../components/GenericRegistration.jsx';
 import Pricing from '../components/Pricing.jsx';
 import SideNav, { getDrawerWidth } from '../components/SideNav.jsx';
 import Consultation from '../components/Consultation.jsx';
@@ -88,7 +86,7 @@ export default function App(){
           )}
           <Typography variant="h6" sx={{fontWeight:700, fontSize:{xs:'1.1rem', sm:'1.25rem'}}}>HealthCare Platform</Typography>
           <Box sx={{flexGrow:1}} />
-          {!auth && <Button component={Link} to="/login" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Patient Login</Button>}
+          {!auth && <Button component={Link} to="/login" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Consumer Login</Button>}
           {!auth && <Button component={Link} to="/adminLogin" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Admin Login</Button>}
           {auth && <Button onClick={logout} color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Logout</Button>}
         </Toolbar>
@@ -101,10 +99,10 @@ export default function App(){
           <Route path="/" element={<ProtectedRoute auth={auth}><Dashboard token={auth?.token} role={auth?.role} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} onRequestConsult={requestConsult} /></ProtectedRoute>} />
           <Route path="/login" element={auth? <Navigate to="/" replace />:<LoginForm onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
           <Route path="/adminLogin" element={auth? <Navigate to="/" replace />:<AdminLogin onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
-          <Route path="/signup" element={auth? <Navigate to="/" replace />:<PatientRegistration />} />
-          <Route path="/register" element={<AdminRoute auth={auth}><RegistrationForm /></AdminRoute>} />
-          <Route path="/register/patient" element={<AdminRoute auth={auth}><PatientRegistration /></AdminRoute>} />
-          <Route path="/register/doctor" element={<AdminRoute auth={auth}><DoctorRegistration /></AdminRoute>} />
+          <Route path="/signup" element={auth? <Navigate to="/" replace />:<GenericRegistration />} />
+          <Route path="/register" element={<AdminRoute auth={auth}><GenericRegistration /></AdminRoute>} />
+          <Route path="/register/consumer" element={<AdminRoute auth={auth}><GenericRegistration /></AdminRoute>} />
+          <Route path="/register/provider" element={<AdminRoute auth={auth}><GenericRegistration /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/consult/:id" element={<ProtectedRoute auth={auth}><Consultation /></ProtectedRoute>} />
           <Route path="*" element={<Typography>Not Found</Typography>} />
