@@ -6,7 +6,8 @@ import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import { buildTheme } from '../theme/theme.js';
 import LoginForm from '../components/LoginForm.jsx';
 import Dashboard from '../components/Dashboard.jsx';
-import GenericRegistration from '../components/GenericRegistration.jsx';
+import ConsumerRegistration from '../components/ConsumerRegistration.jsx';
+import ProviderRegistration from '../components/ProviderRegistration.jsx';
 import Pricing from '../components/Pricing.jsx';
 import SideNav, { getDrawerWidth } from '../components/SideNav.jsx';
 import Consultation from '../components/Consultation.jsx';
@@ -99,10 +100,10 @@ export default function App(){
           <Route path="/" element={<ProtectedRoute auth={auth}><Dashboard token={auth?.token} role={auth?.role} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} onRequestConsult={requestConsult} /></ProtectedRoute>} />
           <Route path="/login" element={auth? <Navigate to="/" replace />:<LoginForm onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
           <Route path="/adminLogin" element={auth? <Navigate to="/" replace />:<AdminLogin onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
-          <Route path="/signup" element={auth? <Navigate to="/" replace />:<GenericRegistration />} />
-          <Route path="/register" element={<AdminRoute auth={auth}><GenericRegistration /></AdminRoute>} />
-          <Route path="/register/consumer" element={<AdminRoute auth={auth}><GenericRegistration /></AdminRoute>} />
-          <Route path="/register/provider" element={<AdminRoute auth={auth}><GenericRegistration /></AdminRoute>} />
+          <Route path="/signup" element={auth? <Navigate to="/" replace />:<ConsumerRegistration />} />
+          <Route path="/signup/provider" element={auth? <Navigate to="/" replace />:<ProviderRegistration />} />
+          <Route path="/register/consumer" element={<AdminRoute auth={auth}><ConsumerRegistration admin token={auth?.token} /></AdminRoute>} />
+          <Route path="/register/provider" element={<AdminRoute auth={auth}><ProviderRegistration admin token={auth?.token} /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/consult/:id" element={<ProtectedRoute auth={auth}><Consultation /></ProtectedRoute>} />
           <Route path="*" element={<Typography>Not Found</Typography>} />
