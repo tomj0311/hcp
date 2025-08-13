@@ -6,7 +6,9 @@ import { v4 as uuid } from 'uuid';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const dataDir = path.join(__dirname,'..','..','data');
-const doctorsFile = path.join(dataDir,'doctors.json');
+const providersDir = path.join(dataDir,'providers');
+if(!fs.existsSync(providersDir)) fs.mkdirSync(providersDir,{recursive:true});
+const providersFile = path.join(providersDir,'providers.json');
 
 const baseAgent = {
   description: 'AI medical assistant',
@@ -19,14 +21,14 @@ const baseAgent = {
 };
 
 export function seedDoctors(){
-  if(!fs.existsSync(dataDir)) fs.mkdirSync(dataDir,{recursive:true});
-  if(fs.existsSync(doctorsFile)) {
-    console.log('[SEED] Doctors already exist, skipping seed');
-    return; // don't overwrite
+  // backward exported name for compatibility; seeds providers now
+  if(!fs.existsSync(providersFile)){
+    console.log('[SEED] Creating initial providers...');
+    const names = ['Provider Ava','Provider Liam','Provider Noah','Provider Emma','Provider Mia','Provider Zoe'];
+    const providers = names.map(n=> ({ id: uuid(), name:n, rank: Math.floor(Math.random()*100), role:'provider', active:true, aiAgent: { name:n, ...baseAgent }}));
+    fs.writeFileSync(providersFile, JSON.stringify(providers,null,2));
+    console.log('[SEED] Providers seeded successfully');
+  } else {
+    console.log('[SEED] Providers already exist, skipping seed');
   }
-  console.log('[SEED] Creating initial doctors...');
-  const names = ['Dr. Ava','Dr. Liam','Dr. Noah','Dr. Emma','Dr. Mia','Dr. Zoe'];
-  const doctors = names.map(n=> ({ id: uuid(), name:n, rank: Math.floor(Math.random()*100), active:true, aiAgent: { name:n, ...baseAgent }}));
-  fs.writeFileSync(doctorsFile, JSON.stringify(doctors,null,2));
-  console.log('[SEED] Doctors seeded successfully');
 }

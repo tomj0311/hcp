@@ -14,7 +14,7 @@ import paymentRouter from './routes/payments.js';
 import uploadsRouter from './routes/uploads.js';
 import { initMatchmaking } from './ws/matchmaking.js';
 import { verifyTokenMiddleware } from './utils/auth.js';
-import { seedDoctors } from './services/seedDoctors.js';
+import { seedProviders } from './services/seedProviders.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,8 +56,8 @@ app.use('/uploads', uploadsRouter);
 if(!fs.existsSync(path.join(__dirname,'..','data'))){
   fs.mkdirSync(path.join(__dirname,'..','data'),{recursive:true});
 }
-// seed initial AI doctors once
-seedDoctors();
+// seed initial AI providers once
+seedProviders();
 
 const port = process.env.PORT || 4000;
 const useTLS = process.env.TLS_KEY && process.env.TLS_CERT;
