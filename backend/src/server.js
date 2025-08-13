@@ -11,6 +11,7 @@ import { WebSocketServer } from 'ws';
 import authRouter from './routes/auth.js';
 import userRouter from './routes/users.js';
 import paymentRouter from './routes/payments.js';
+import uploadsRouter from './routes/uploads.js';
 import { initMatchmaking } from './ws/matchmaking.js';
 import { verifyTokenMiddleware } from './utils/auth.js';
 import { seedDoctors } from './services/seedDoctors.js';
@@ -49,6 +50,7 @@ app.use('/auth', authRouter);
 // Users router now internally protects only the routes that require auth.
 app.use('/users', userRouter);
 app.use('/payments', verifyTokenMiddleware, paymentRouter);
+app.use('/uploads', uploadsRouter);
 
 // simple temp storage
 if(!fs.existsSync(path.join(__dirname,'..','data'))){

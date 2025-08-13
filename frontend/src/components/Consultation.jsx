@@ -10,13 +10,20 @@ import {
   Tabs,
   Avatar,
   Divider,
-  Tooltip
+  Tooltip,
+  Button,
+  Chip,
+  LinearProgress,
+  Alert
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SendIcon from '@mui/icons-material/Send';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import MicNoneIcon from '@mui/icons-material/MicNone';
 import VideocamIcon from '@mui/icons-material/Videocam';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -37,7 +44,12 @@ export default function Consultation(){
   ]);
   const [input,setInput] = useState('');
   const [sending,setSending] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
   const chatEndRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Fetch doctor if not in navigation state (deep-link support)
   useEffect(()=>{
@@ -75,6 +87,88 @@ export default function Consultation(){
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleFileSelect = (e) => {
+    const files = Array.from(e.target.files);
+    const validFiles = files.filter(file => {
+      const maxSize = 200 * 1024 * 1024; // 200MB
+      if (file.size > maxSize) {
+        setUploadError(`File "${file.name}" is too large. Maximum size is 200MB.`);
+        return false;
+      }
+      return true;
+    });
+    
+    setSelectedFiles(prev => [...prev, ...validFiles]);
+    setUploadError('');
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFiles = async () => {
+    if (selectedFiles.length === 0) return;
+    
+    setUploading(true);
+    setUploadError('');
+    setUploadProgress(0);
+    
+    try {
+      const formData = new FormData();
+      selectedFiles.forEach(file => {
+        formData.append('files', file);
+      });
+
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/uploads/upload`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: (progressEvent) => {
+            const progress = Math.round(
+              (progressEvent.loaded * 100) / progressEvent.total
+            );
+            setUploadProgress(progress);
+          },
+        }
+      );
+
+      // Add upload confirmation message to chat
+      const fileNames = selectedFiles.map(f => f.name).join(', ');
+      setMessages(m => [...m, { 
+        id: Date.now() + ':upload', 
+        role: 'system', 
+        text: `📎 Files uploaded successfully: ${fileNames}`,
+        files: response.data.files
+      }]);
+      
+      setSelectedFiles([]);
+      setUploadProgress(0);
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadError(error.response?.data?.error || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
@@ -128,12 +222,31 @@ export default function Consultation(){
                     maxWidth:'80%',
                     background: m.role==='user'
                       ? (palette.mode==='dark' ? 'linear-gradient(135deg,#1273ea 0%,#1565c0 85%)':'linear-gradient(135deg,#1273ea 0%,#0d5fb1 85%)')
+                      : m.role==='system'
+                      ? (palette.mode==='dark'? '#2a2a2a':'#e8f5e8')
                       : (palette.mode==='dark'? '#1e1e1e':'#f5f7fb'),
                     color: m.role==='user'? '#fff': undefined,
                     borderColor: m.role==='user'? 'transparent': (palette.mode==='dark'? '#272727':'#dfe3ea'),
                     boxShadow: m.role==='user'? '0 4px 16px -6px rgba(0,0,0,0.45)':'none'
-                  })} aria-label={m.role==='user'? 'user message':'ai message'}>
+                  })} aria-label={m.role==='user'? 'user message': m.role==='system'? 'system message':'ai message'}>
                     <Typography variant="body2" sx={{fontSize:{xs:'0.7rem', sm:'0.78rem'}}}>{m.text}</Typography>
+                    {m.files && m.files.length > 0 && (
+                      <Box sx={{ mt: 1 }}>
+                        {m.files.map((file, index) => (
+                          <Chip
+                            key={index}
+                            label={file.originalName}
+                            size="small"
+                            sx={{ 
+                              fontSize: '0.65rem', 
+                              mr: 0.5, 
+                              mb: 0.5,
+                              backgroundColor: m.role === 'user' ? 'rgba(255,255,255,0.2)' : undefined
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
                   </Paper>
                 </Stack>
               ))}
@@ -141,25 +254,136 @@ export default function Consultation(){
           )}
           <div ref={chatEndRef} />
         </Box>
+        
+        {/* File Upload Section */}
+        {(channel === 'chat' || channel === 'video') && (
+          <>
+            {uploadError && (
+              <Alert severity="error" sx={{ mb: 1 }} onClose={() => setUploadError('')}>
+                {uploadError}
+              </Alert>
+            )}
+            
+            {selectedFiles.length > 0 && (
+              <Box sx={{ mb: 1 }}>
+                <Typography variant="subtitle2" sx={{ mb: 1, fontSize: '0.75rem' }}>
+                  Selected Files ({selectedFiles.length}):
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                  {selectedFiles.map((file, index) => (
+                    <Chip
+                      key={index}
+                      label={`${file.name} (${formatFileSize(file.size)})`}
+                      onDelete={() => removeFile(index)}
+                      deleteIcon={<DeleteIcon />}
+                      size="small"
+                      sx={{ fontSize: '0.7rem' }}
+                    />
+                  ))}
+                </Stack>
+                {uploading && (
+                  <Box sx={{ mt: 1 }}>
+                    <LinearProgress variant="determinate" value={uploadProgress} />
+                    <Typography variant="caption" sx={{ fontSize: '0.65rem' }}>
+                      Uploading... {uploadProgress}%
+                    </Typography>
+                  </Box>
+                )}
+                <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    startIcon={<CloudUploadIcon />}
+                    onClick={uploadFiles}
+                    disabled={uploading}
+                    sx={{ fontSize: '0.7rem' }}
+                  >
+                    Upload Files
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setSelectedFiles([])}
+                    disabled={uploading}
+                    sx={{ fontSize: '0.7rem' }}
+                  >
+                    Clear All
+                  </Button>
+                </Stack>
+              </Box>
+            )}
+          </>
+        )}
+        
         <Divider sx={{my:1}} />
         <Stack direction="row" spacing={1} component="form" onSubmit={(e)=>{e.preventDefault(); sendMessage();}} aria-label="chat input form">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+            multiple
+            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.json"
+            style={{ display: 'none' }}
+          />
+          <IconButton
+            color="primary"
+            onClick={() => fileInputRef.current?.click()}
+            aria-label="attach files"
+            disabled={channel === 'voice'}
+            size="small"
+            sx={{
+              borderRadius: '50%',
+              aspectRatio: '1/1',
+              width: 40,
+              height: 40,
+              '&:hover': {
+                borderRadius: '50%'
+              }
+            }}
+          >
+            <AttachFileIcon />
+          </IconButton>
           <TextField
             size="small"
             placeholder={channel==='chat' || channel==='video'? 'Type your message...':'Channel is in placeholder mode'}
             fullWidth
             multiline
-            maxRows={4}
+            minRows={3}
+            maxRows={6}
             disabled={channel==='voice'}
             value={input}
             onChange={e=> setInput(e.target.value)}
             onKeyDown={handleKey}
             inputProps={{'aria-label':'chat input'}}
+            sx={{
+              '& .MuiInputBase-root': {
+                alignItems: 'flex-start',
+                paddingTop: 1
+              }
+            }}
           />
-          <IconButton color="primary" type="submit" aria-label="send message" disabled={!input.trim() || sending || channel==='voice'}>
+          <IconButton 
+            color="primary" 
+            type="submit" 
+            aria-label="send message" 
+            disabled={!input.trim() || sending || channel==='voice'}
+            sx={{
+              borderRadius: '50%',
+              aspectRatio: '1/1',
+              width: 40,
+              height: 40,
+              '&:hover': {
+                borderRadius: '50%'
+              }
+            }}
+          >
             <SendIcon />
           </IconButton>
         </Stack>
-        <Typography variant="caption" color="text.secondary" sx={{mt:0.75, fontSize:{xs:'0.6rem', sm:'0.65rem'}}}>Prototype: Messages stay local. Future: real-time AI responses & synchronized avatar.</Typography>
+        <Typography variant="caption" color="text.secondary" sx={{mt:0.75, fontSize:{xs:'0.6rem', sm:'0.65rem'}}}>
+          Prototype: Messages stay local. Future: real-time AI responses & synchronized avatar. 
+          Files are uploaded to secure user folders (max 200MB each).
+        </Typography>
       </Paper>
     </Box>
   );
