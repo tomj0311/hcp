@@ -33,10 +33,20 @@ const router = Router();
 
 // ---------------- Public routes ----------------
 // ---------------- Consumer (formerly patient) public registration ----------------
+// Standard consumer registration with extended profile fields
 router.post('/consumers',[
-  body('name').notEmpty().withMessage('Name is required'),
+  body('firstName').notEmpty().withMessage('First name is required'),
+  body('lastName').notEmpty().withMessage('Last name is required'),
   body('email').isEmail().withMessage('Valid email required'),
-  body('password').isLength({min:8}).withMessage('Password must be at least 8 characters')
+  body('password').isLength({min:8}).withMessage('Password must be at least 8 characters'),
+  body('confirmPassword').custom((val,{req})=> val === req.body.password).withMessage('Passwords do not match'),
+  body('phone').optional().isString().isLength({min:7,max:20}).withMessage('Phone length invalid'),
+  body('postalCode').optional().isLength({max:20}),
+  body('country').optional().isLength({max:60}),
+  body('state').optional().isLength({max:60}),
+  body('city').optional().isLength({max:60}),
+  body('address1').optional().isLength({max:120}),
+  body('address2').optional().isLength({max:120})
 ], async (req,res)=>{
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
@@ -47,9 +57,9 @@ router.post('/consumers',[
   }
 
   const verificationTokens = read(consumerVerificationFile);
-  const { password, ...rest } = req.body;
+  const { password, confirmPassword, firstName, lastName, ...rest } = req.body;
   const hash = await bcrypt.hash(password, 10);
-  const consumer = { id: uuid(), role:'consumer', active:false, password: hash, createdAt: Date.now(), ...rest };
+  const consumer = { id: uuid(), role:'consumer', active:false, password: hash, createdAt: Date.now(), firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest };
   consumers.push(consumer);
   write(consumersFile, consumers);
   const token = uuid();
@@ -94,22 +104,34 @@ router.get('/providers', verifyTokenMiddleware, (req,res)=>{
 
 // Providers can self-register (public) with password (to allow login) or we can auto-generate one if omitted
 router.post('/providers', [
-  body('name').notEmpty(), 
+  body('firstName').notEmpty(),
+  body('lastName').notEmpty(),
   body('email').isEmail(),
-  body('password').optional().isLength({min:8}).withMessage('Password must be at least 8 characters when provided')
+  body('password').optional().isLength({min:8}).withMessage('Password must be at least 8 characters when provided'),
+  body('confirmPassword').optional().custom((val,{req})=> !req.body.password || val === req.body.password).withMessage('Passwords do not match'),
+  body('phone').optional().isString().isLength({min:7,max:20}),
+  body('organization').optional().isLength({max:120}),
+  body('specialization').optional().isLength({max:120}),
+  body('bio').optional().isLength({max:1000}),
+  body('country').optional().isLength({max:60}),
+  body('state').optional().isLength({max:60}),
+  body('city').optional().isLength({max:60}),
+  body('address1').optional().isLength({max:120}),
+  body('address2').optional().isLength({max:120}),
+  body('postalCode').optional().isLength({max:20})
 ], async (req,res)=>{
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
   const providers = read(providersFile);
   if(providers.some(p=> p.email === req.body.email)) return res.status(400).json({message:'Email already registered.'});
-  let { password, ...rest } = req.body;
+  let { password, confirmPassword, firstName, lastName, ...rest } = req.body;
   let generated = false;
   if(!password){
     password = crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
     generated = true;
   }
   const hash = await bcrypt.hash(password,10);
-  const provider = { id: uuid(), role:'provider', active:true, password: hash, rank: Math.floor(Math.random()*100), aiAgent: rest.aiAgent || null, createdAt: Date.now(), ...rest };
+  const provider = { id: uuid(), role:'provider', active:true, password: hash, rank: Math.floor(Math.random()*100), aiAgent: rest.aiAgent || null, createdAt: Date.now(), firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest };
   providers.push(provider);
   write(providersFile, providers);
   sendRegistrationEmail(provider.email, 'provider').catch(()=>{});
@@ -123,9 +145,17 @@ router.get('/consumers', verifyTokenMiddleware, (req,res)=>{
 
 // Admin-only: create & activate patient directly (no email verification step)
 router.post('/consumers/admin', verifyTokenMiddleware, [
-  body('name').notEmpty().withMessage('Name is required'),
+  body('firstName').notEmpty().withMessage('First name required'),
+  body('lastName').notEmpty().withMessage('Last name required'),
   body('email').isEmail().withMessage('Valid email required'),
-  body('password').optional().isLength({min:8}).withMessage('Password must be at least 8 characters when provided')
+  body('password').optional().isLength({min:8}).withMessage('Password must be at least 8 characters when provided'),
+  body('phone').optional().isString().isLength({min:7,max:20}),
+  body('country').optional().isLength({max:60}),
+  body('state').optional().isLength({max:60}),
+  body('city').optional().isLength({max:60}),
+  body('address1').optional().isLength({max:120}),
+  body('address2').optional().isLength({max:120}),
+  body('postalCode').optional().isLength({max:20})
 ], async (req,res)=>{
   if(!req.user || req.user.role !== 'admin') return res.status(403).json({error:'admin only'});
   const errors = validationResult(req);
@@ -136,14 +166,14 @@ router.post('/consumers/admin', verifyTokenMiddleware, [
     return res.status(400).json({message:'Email already registered.'});
   }
 
-  let { password, ...rest } = req.body;
+  let { password, firstName, lastName, ...rest } = req.body;
   let generated = false;
   if(!password){
     password = crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
     generated = true;
   }
   const hash = await bcrypt.hash(password,10);
-  const consumer = { id: uuid(), role:'consumer', active:true, password: hash, ...rest };
+  const consumer = { id: uuid(), role:'consumer', active:true, password: hash, firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest };
   consumers.push(consumer);
   write(consumersFile, consumers);
   sendRegistrationEmail(consumer.email, 'consumer').catch(()=>{});
