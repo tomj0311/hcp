@@ -29,6 +29,28 @@ function write(file,data){
   fs.writeFileSync(file, JSON.stringify(data,null,2));
 }
 
+// Helper: normalize email consistently (trim + lowercase)
+function normEmail(e){
+  return (e||'').trim().toLowerCase();
+}
+
+// Helper: case-insensitive cross-collection duplicate check
+function emailExists(email){
+  const target = normEmail(email);
+  const providers = read(providersFile);
+  const consumers = read(consumersFile);
+  return providers.some(p=> normEmail(p.email) === target) || consumers.some(c=> normEmail(c.email) === target);
+}
+
+// Optional phone duplicate check (across both roles). Only rejects if an existing record has identical phone string (after trim) and phone provided in request.
+function phoneExists(phone){
+  if(!phone) return false;
+  const target = phone.trim();
+  const providers = read(providersFile);
+  const consumers = read(consumersFile);
+  return providers.some(p=> (p.phone||'').trim() === target) || consumers.some(c=> (c.phone||'').trim() === target);
+}
+
 const router = Router();
 
 // ---------------- Public routes ----------------
@@ -52,20 +74,26 @@ router.post('/consumers',[
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
 
   const consumers = read(consumersFile);
-  if(consumers.some(p=> p.email === req.body.email)){
+  // Cross-role, case-insensitive email duplicate prevention
+  if(emailExists(req.body.email)){
     return res.status(400).json({message:'Email already registered. Please log in or use a different email.'});
+  }
+  // Phone duplicate (optional)
+  if(phoneExists(req.body.phone)){
+    return res.status(400).json({message:'Phone number already associated with an existing account.'});
   }
 
   const verificationTokens = read(consumerVerificationFile);
-  const { password, confirmPassword, firstName, lastName, ...rest } = req.body;
+  const { password, confirmPassword, firstName, lastName, email, ...rest } = req.body;
   const hash = await bcrypt.hash(password, 10);
-  const consumer = { id: uuid(), role:'consumer', active:false, password: hash, createdAt: Date.now(), firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest };
+  const consumer = { id: uuid(), role:'consumer', active:false, password: hash, createdAt: Date.now(), firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest, email: normEmail(email), emailOriginal: email };
   consumers.push(consumer);
   write(consumersFile, consumers);
   const token = uuid();
   verificationTokens.push({ token, consumerId: consumer.id, createdAt: Date.now() });
   write(consumerVerificationFile, verificationTokens);
-  sendRegistrationEmail(consumer.email, 'consumer').catch(()=>{});
+  // Send email with verification token (so user can click link or copy code)
+  sendRegistrationEmail(consumer.email, 'consumer', token).catch(()=>{});
   res.status(201).json({ id: consumer.id, verifyToken: token });
 });
 
@@ -88,7 +116,8 @@ router.post('/consumers/login',[body('email').isEmail(), body('password').notEmp
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
   const consumers = read(consumersFile);
-  const consumer = consumers.find(p=> p.email === req.body.email);
+  const target = normEmail(req.body.email);
+  const consumer = consumers.find(p=> normEmail(p.email) === target || normEmail(p.emailOriginal) === target);
   if(!consumer) return res.status(401).json({error:'invalid credentials'});
   if(!consumer.active) return res.status(403).json({error:'not verified'});
   const ok = await bcrypt.compare(req.body.password, consumer.password);
@@ -123,15 +152,16 @@ router.post('/providers', [
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
   const providers = read(providersFile);
-  if(providers.some(p=> p.email === req.body.email)) return res.status(400).json({message:'Email already registered.'});
-  let { password, confirmPassword, firstName, lastName, ...rest } = req.body;
+  if(emailExists(req.body.email)) return res.status(400).json({message:'Email already registered.'});
+  if(phoneExists(req.body.phone)) return res.status(400).json({message:'Phone number already associated with an existing account.'});
+  let { password, confirmPassword, firstName, lastName, email, ...rest } = req.body;
   let generated = false;
   if(!password){
     password = crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
     generated = true;
   }
   const hash = await bcrypt.hash(password,10);
-  const provider = { id: uuid(), role:'provider', active:true, password: hash, rank: Math.floor(Math.random()*100), aiAgent: rest.aiAgent || null, createdAt: Date.now(), firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest };
+  const provider = { id: uuid(), role:'provider', active:true, password: hash, rank: Math.floor(Math.random()*100), aiAgent: rest.aiAgent || null, createdAt: Date.now(), firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest, email: normEmail(email), emailOriginal: email };
   providers.push(provider);
   write(providersFile, providers);
   sendRegistrationEmail(provider.email, 'provider').catch(()=>{});
@@ -162,18 +192,21 @@ router.post('/consumers/admin', verifyTokenMiddleware, [
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
 
   const consumers = read(consumersFile);
-  if(consumers.some(p=> p.email === req.body.email)){
+  if(emailExists(req.body.email)){
     return res.status(400).json({message:'Email already registered.'});
   }
+  if(phoneExists(req.body.phone)){
+    return res.status(400).json({message:'Phone number already associated with an existing account.'});
+  }
 
-  let { password, firstName, lastName, ...rest } = req.body;
+  let { password, firstName, lastName, email, ...rest } = req.body;
   let generated = false;
   if(!password){
     password = crypto.randomBytes(9).toString('base64').replace(/[^a-zA-Z0-9]/g,'').slice(0,12);
     generated = true;
   }
   const hash = await bcrypt.hash(password,10);
-  const consumer = { id: uuid(), role:'consumer', active:true, password: hash, firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest };
+  const consumer = { id: uuid(), role:'consumer', active:true, password: hash, firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest, email: normEmail(email), emailOriginal: email };
   consumers.push(consumer);
   write(consumersFile, consumers);
   sendRegistrationEmail(consumer.email, 'consumer').catch(()=>{});

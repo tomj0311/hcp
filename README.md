@@ -13,11 +13,11 @@ Full-stack prototype for generic provider ↔ consumer interactions (originally 
 6. Security via optional TLS for WebSockets & REST when cert/key env vars provided ✔
 7. Material UI with dark & light themes; default dark styling similar to screenshot ✔
 8. Spacing & alignment with consistent MUI spacing scale (WCAG-friendly labels, color contrast adjustable via theme) ✔
-9. Email integration placeholder via SMTP env (API hook to be implemented) ◻ (future enhancement: send email on registration)
+9. Email verification emails (Nodemailer via SMTP/Gmail) ✔
 10. Stripe payment integration (checkout session endpoint & pricing UI) ✔
 11. Pricing page with freemium, per consultation ($50), enterprise ($100) tiers ✔
 ## TODO / Next Steps
-- Implement actual email send in registration route (Nodemailer service file & call after registration, using accessible HTML template).
+// Email send now implemented with verification tokens.
 - Add form validations & better accessibility audits (ARIA roles, focus management, contrast tests).
 - Persist users in a real database.
 - Add provider availability & real matchmaking logic.
@@ -58,4 +58,26 @@ Implements Express API + WebSocket for realtime consult requests.
 1. Copy `.env.example` to `.env` and adjust values.
 2. Install deps: `npm install`.
 3. Run dev: `npm run dev`.
+
+## Email (Verification) Setup
+You can send real verification emails using either a local SMTP catcher or Gmail.
+
+### Option A: Local Dev (MailDev / MailHog)
+Run a local SMTP server (e.g., MailDev) on port 1025 and keep the default `.env.example` values. Emails will appear in the MailDev UI.
+
+### Option B: Gmail (hub8ai@gmail.com)
+1. In Gmail account settings enable 2FA.
+2. Create an App Password (select App: Mail, Device: Other) and copy the 16‑character password.
+3. In `backend/.env` set:
+```
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=hub8ai@gmail.com
+SMTP_PASS=YOUR_APP_PASSWORD
+EMAIL_FROM="HealthCare Platform <hub8ai@gmail.com>"
+```
+4. Restart the backend. New consumer registrations will send a verification code + link.
+
+The verification token is still returned in the API response for dev convenience; remove it in production.
 

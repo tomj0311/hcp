@@ -12,6 +12,7 @@ import Pricing from '../components/Pricing.jsx';
 import SideNav, { getDrawerWidth } from '../components/SideNav.jsx';
 import Consultation from '../components/Consultation.jsx';
 import AdminLogin from '../components/AdminLogin.jsx';
+import EmailVerify from '../components/EmailVerify.jsx';
 
 function ProtectedRoute({ auth, children }){
   if(!auth) return <Navigate to="/login" replace />;
@@ -106,6 +107,7 @@ export default function App(){
           <Route path="/register/provider" element={<AdminRoute auth={auth}><ProviderRegistration admin token={auth?.token} /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/consult/:id" element={<ProtectedRoute auth={auth}><Consultation /></ProtectedRoute>} />
+          <Route path="/verify" element={<EmailVerify />} />
           <Route path="*" element={<Typography>Not Found</Typography>} />
         </Routes>
       </Box>

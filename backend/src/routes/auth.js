@@ -21,6 +21,10 @@ function read(file){
   return JSON.parse(fs.readFileSync(file));
 }
 
+function normEmail(e){
+  return (e||'').trim().toLowerCase();
+}
+
 const router = Router();
 
 // Provide development fallbacks so login works even if .env wasn't copied.
@@ -31,13 +35,14 @@ router.post('/login', [body('username').notEmpty(), body('password').notEmpty()]
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
   const { username, password } = req.body;
-  if(username === ADMIN_USER && password === ADMIN_PASS){
+  const normalized = normEmail(username);
+  if(normalized === normEmail(ADMIN_USER) && password === ADMIN_PASS){
     const token = generateToken({ role:'admin', username });
     return res.json({ token, role:'admin' });
   }
   // consumer login
   const consumers = read(consumersFile);
-  const consumer = consumers.find(p=> p.email === username);
+  const consumer = consumers.find(p=> normEmail(p.email) === normalized || normEmail(p.emailOriginal) === normalized);
   if(consumer && consumer.active){
     const ok = await bcrypt.compare(password, consumer.password);
     if(ok){
@@ -47,7 +52,7 @@ router.post('/login', [body('username').notEmpty(), body('password').notEmpty()]
   }
   // provider login
   const providers = read(providersFile);
-  const provider = providers.find(p=> p.email === username);
+  const provider = providers.find(p=> normEmail(p.email) === normalized || normEmail(p.emailOriginal) === normalized);
   if(provider && provider.active){
     const ok = await bcrypt.compare(password, provider.password);
     if(ok){
