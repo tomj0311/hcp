@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { TextField, Button, Typography, Paper, Stack, Link as MuiLink } from '@mui/material';
+import { TextField, Button, Typography, Paper, Stack, Link as MuiLink, Divider } from '@mui/material';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import GoogleAuthButton from './GoogleAuthButton.jsx';
 
 export default function LoginForm({ onLogin }){
   const [email,setEmail] = useState('');
@@ -27,6 +28,14 @@ export default function LoginForm({ onLogin }){
     <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:4}, maxWidth:{xs:360, sm:420}, mx:'auto', mt:{xs:2, sm:3}, boxShadow:(theme)=> theme.palette.mode==='dark'? '0 6px 26px -10px rgba(0,0,0,0.6)':'0 6px 24px -8px rgba(0,0,0,0.08)'}} aria-label="login form">
   <Typography variant="h5" sx={{fontWeight:700, mb:2, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>Sign In</Typography>
       <Stack spacing={2}>
+        <GoogleAuthButton text="Sign in with Google" />
+        
+        <Divider sx={{ my: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            or
+          </Typography>
+        </Divider>
+        
         <TextField label="Email" type="email" fullWidth value={email} onChange={e=> setEmail(e.target.value)} required size={window.innerWidth < 600 ? 'small' : 'medium'} inputProps={{'aria-label':'username'}} />
         <TextField label="Password" type="password" fullWidth value={password} onChange={e=> setPassword(e.target.value)} required size={window.innerWidth < 600 ? 'small' : 'medium'} inputProps={{'aria-label':'password'}} />
         {error && <Typography color="error" role="alert" sx={{fontSize:{xs:'0.75rem', sm:'0.8rem'}}}>{error}</Typography>}

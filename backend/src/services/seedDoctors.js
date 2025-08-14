@@ -11,9 +11,9 @@ if(!fs.existsSync(providersDir)) fs.mkdirSync(providersDir,{recursive:true});
 const providersFile = path.join(providersDir,'providers.json');
 
 const baseAgent = {
-  description: 'AI medical assistant',
-  category: 'HealthCare',
-  instructions: 'Provide general medical guidance, not a diagnosis.',
+  description: 'AI consultation assistant',
+  category: 'ConsultFlow',
+  instructions: 'Provide general consultation guidance and support.',
   model: { path: 'ai.model.openai', api_key: 'demo', id: 'gpt-4.1' },
   tools: { 'ai.tools.firecrawl': {}, 'ai.tools.exa': { api_key: 'exa_demo_key' } },
   memory: { history: { enabled: true, num: 3 } },

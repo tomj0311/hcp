@@ -13,6 +13,19 @@ export function verifyTokenMiddleware(req,res,next){
     req.user = decoded;
     next();
   } catch(e){
-    return res.status(401).json({error:'invalid token'});
+    // Check if the error is due to token expiration
+    if(e.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        error: 'token expired',
+        redirect: '/login',
+        message: 'Your session has expired. Please log in again.'
+      });
+    }
+    // For other token errors (malformed, invalid signature, etc.)
+    return res.status(401).json({
+      error: 'invalid token',
+      redirect: '/login',
+      message: 'Invalid authentication token. Please log in again.'
+    });
   }
 }

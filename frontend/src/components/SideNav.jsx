@@ -42,9 +42,11 @@ export default function SideNav({ role, onLogout, collapsed }) {
     '& .MuiDrawer-paper': {
       width,
       boxSizing: 'border-box',
-      background: theme.palette.mode === 'dark' ? '#141414' : theme.palette.background.paper,
+  background: theme.palette.mode === 'dark' ? theme.palette.background.default : theme.palette.background.paper,
       color: theme.palette.mode === 'dark' ? theme.palette.grey[100] : theme.palette.text.primary,
-      borderRight: theme.palette.mode === 'dark' ? '1px solid #1d1d1d' : '1px solid #e5e8ef',
+  borderRight: '1px solid',
+  borderColor: theme.palette.mode === 'dark' ? theme.palette.grey[900] : theme.palette.divider,
+  borderRadius: 0,
       backdropFilter: 'blur(4px)',
       overflowX: 'hidden',
       transition: 'width .25s ease, background-color .25s ease, border-color .25s ease, color .25s ease',
@@ -102,7 +104,7 @@ export default function SideNav({ role, onLogout, collapsed }) {
           {!collapsed && <Typography variant="subtitle1" sx={{ fontWeight:700, letterSpacing:.5, fontSize:{xs:14, sm:16}, lineHeight:1 }}>HCP</Typography>}
         </Box>
       </Toolbar>
-  <Divider sx={{ borderColor: theme.palette.mode==='dark' ? '#262626' : '#e5e8ef', transition:'border-color .25s ease' }} />
+  <Divider sx={{ borderColor: 'divider', transition:'border-color .25s ease' }} />
       {sections.map(sec => (
         <Box key={sec.heading} sx={{ mt: 1 }}>
           {!collapsed && <Typography variant="overline" sx={{ px: 2, pt: .5, pb: .5, display: 'block', fontSize: {xs:9, sm:10}, letterSpacing: 1.3, opacity: 0.55 }}>{sec.heading}</Typography>}
@@ -137,7 +139,7 @@ export default function SideNav({ role, onLogout, collapsed }) {
               return content;
             })}
           </List>
-          <Divider sx={{ borderColor: theme.palette.mode==='dark' ? '#1a1a1a' : '#e5e8ef', mt: .75, transition:'border-color .25s ease' }} />
+          <Divider sx={{ borderColor: 'divider', mt: .75, transition:'border-color .25s ease' }} />
         </Box>
       ))}
       <Box sx={{ flexGrow: 1 }} />

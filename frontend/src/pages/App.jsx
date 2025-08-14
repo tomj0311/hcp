@@ -13,6 +13,9 @@ import Consultation from '../components/Consultation.jsx';
 import AdminLogin from '../components/AdminLogin.jsx';
 import EmailVerify from '../components/EmailVerify.jsx';
 import Meetups from '../components/Meetups.jsx';
+import AuthCallback from '../components/AuthCallback.jsx';
+import ProfileCompletion from '../components/ProfileCompletion.jsx';
+import { setupAxiosInterceptors } from '../utils/auth.js';
 
 function ProtectedRoute({ auth, children }){
   if(!auth) return <Navigate to="/login" replace />;
@@ -29,6 +32,15 @@ export default function App(){
   const [mode,setMode] = useState('dark');
   const theme = useMemo(()=> buildTheme(mode), [mode]);
   const nav = useNavigate();
+
+  // Initialize global axios auth interceptors once
+  useEffect(() => {
+    setupAxiosInterceptors(nav);
+    // Clear in-memory auth state if a global logout is dispatched
+    const onLogout = () => setAuth(null);
+    window.addEventListener('auth:logout', onLogout);
+    return () => window.removeEventListener('auth:logout', onLogout);
+  }, [nav]);
 
   // load from localStorage on mount
   useEffect(()=>{
@@ -56,12 +68,13 @@ export default function App(){
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AppBar
+    <AppBar
         position="fixed"
         color="transparent"
         elevation={0}
         sx={{
-          borderBottom: theme.palette.mode==='dark'? '1px solid #333':'1px solid #e0e0e0',
+      borderBottom: '1px solid',
+      borderColor: 'divider',
           // Keep fully transparent background (no solid fill)
           ml: showNav && !isMobile? `${drawerWidth}px`:0,
           width: showNav && !isMobile? `calc(100% - ${drawerWidth}px)`:'100%',
@@ -85,7 +98,7 @@ export default function App(){
               {navCollapsed ? <Menu size={20} /> : <PanelLeftClose size={20} />}
             </IconButton>
           )}
-          <Typography variant="h6" sx={{fontWeight:700, fontSize:{xs:'1.1rem', sm:'1.25rem'}}}>HealthCare Platform</Typography>
+          <Typography variant="h6" sx={{fontWeight:700, fontSize:{xs:'1.1rem', sm:'1.25rem'}}}>ConsultFlow Platform</Typography>
           <Box sx={{flexGrow:1}} />
           {!auth && <Button component={Link} to="/login" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Consumer Login</Button>}
           {!auth && <Button component={Link} to="/adminLogin" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Admin Login</Button>}
@@ -99,6 +112,7 @@ export default function App(){
         <Routes>
           <Route path="/" element={<ProtectedRoute auth={auth}><Dashboard token={auth?.token} role={auth?.role} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} onRequestConsult={requestConsult} /></ProtectedRoute>} />
           <Route path="/login" element={auth? <Navigate to="/" replace />:<LoginForm onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
+          <Route path="/auth/callback" element={<AuthCallback onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); }} />} />
           <Route path="/adminLogin" element={auth? <Navigate to="/" replace />:<AdminLogin onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
           <Route path="/signup" element={auth? <Navigate to="/" replace />:<ConsumerRegistration />} />
           <Route path="/signup/provider" element={auth? <Navigate to="/" replace />:<ProviderRegistration />} />
@@ -106,6 +120,7 @@ export default function App(){
           <Route path="/register/provider" element={<AdminRoute auth={auth}><ProviderRegistration admin token={auth?.token} /></AdminRoute>} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/consult/:id" element={<ProtectedRoute auth={auth}><Consultation /></ProtectedRoute>} />
+          <Route path="/profile/complete" element={<ProtectedRoute auth={auth}><ProfileCompletion auth={auth} /></ProtectedRoute>} />
           <Route path="/meetups" element={<ProtectedRoute auth={auth}><Meetups auth={auth} /></ProtectedRoute>} />
           <Route path="/verify" element={<EmailVerify />} />
           <Route path="*" element={<Typography>Not Found</Typography>} />

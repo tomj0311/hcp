@@ -7,9 +7,9 @@
     "active": true,
     "aiAgent": {
       "name": "Provider Ava",
-      "description": "AI medical assistant",
-      "category": "HealthCare",
-      "instructions": "Provide general medical guidance, not a diagnosis.",
+      "description": "AI consultation assistant",
+      "category": "ConsultFlow",
+      "instructions": "Provide general consultation guidance and support.",
       "model": {
         "path": "ai.model.openai",
         "api_key": "demo",
@@ -53,9 +53,9 @@
     "active": true,
     "aiAgent": {
       "name": "Provider Liam",
-      "description": "AI medical assistant",
-      "category": "HealthCare",
-      "instructions": "Provide general medical guidance, not a diagnosis.",
+      "description": "AI consultation assistant",
+      "category": "ConsultFlow",
+      "instructions": "Provide general consultation guidance and support.",
       "model": {
         "path": "ai.model.openai",
         "api_key": "demo",
@@ -99,9 +99,9 @@
     "active": true,
     "aiAgent": {
       "name": "Provider Noah",
-      "description": "AI medical assistant",
-      "category": "HealthCare",
-      "instructions": "Provide general medical guidance, not a diagnosis.",
+      "description": "AI consultation assistant",
+      "category": "ConsultFlow",
+      "instructions": "Provide general consultation guidance and support.",
       "model": {
         "path": "ai.model.openai",
         "api_key": "demo",
@@ -145,9 +145,9 @@
     "active": true,
     "aiAgent": {
       "name": "Provider Emma",
-      "description": "AI medical assistant",
-      "category": "HealthCare",
-      "instructions": "Provide general medical guidance, not a diagnosis.",
+      "description": "AI consultation assistant",
+      "category": "ConsultFlow",
+      "instructions": "Provide general consultation guidance and support.",
       "model": {
         "path": "ai.model.openai",
         "api_key": "demo",
@@ -191,9 +191,9 @@
     "active": true,
     "aiAgent": {
       "name": "Provider Mia",
-      "description": "AI medical assistant",
-      "category": "HealthCare",
-      "instructions": "Provide general medical guidance, not a diagnosis.",
+      "description": "AI consultation assistant",
+      "category": "ConsultFlow",
+      "instructions": "Provide general consultation guidance and support.",
       "model": {
         "path": "ai.model.openai",
         "api_key": "demo",
@@ -237,9 +237,9 @@
     "active": true,
     "aiAgent": {
       "name": "Provider Zoe",
-      "description": "AI medical assistant",
-      "category": "HealthCare",
-      "instructions": "Provide general medical guidance, not a diagnosis.",
+      "description": "AI consultation assistant",
+      "category": "ConsultFlow",
+      "instructions": "Provide general consultation guidance and support.",
       "model": {
         "path": "ai.model.openai",
         "api_key": "demo",

@@ -39,7 +39,7 @@ export default function Meetups({ auth }){
   const load = async ()=>{
     setLoading(true);
     try {
-      const res = await axios.get(import.meta.env.VITE_API_URL + '/meetups', { headers:{ Authorization:`Bearer ${auth?.token}` }});
+      const res = await axios.get(import.meta.env.VITE_API_URL + '/meetups');
       setEvents(res.data);
     } finally { setLoading(false);} }
 
@@ -50,8 +50,8 @@ export default function Meetups({ auth }){
     if(!auth?.role || !['consumer','provider'].includes(auth.role)) return;
     setLoadingTargets(true);
     try {
-      const route = auth.role === 'consumer'? '/users/providers' : '/users/consumers';
-      const res = await axios.get(import.meta.env.VITE_API_URL + route, { headers:{ Authorization:`Bearer ${auth?.token}` }});
+  const route = auth.role === 'consumer'? '/users/providers' : '/users/consumers';
+  const res = await axios.get(import.meta.env.VITE_API_URL + route);
       // Normalize to { id, name }
       const list = (res.data||[]).map(u=> ({ id:u.id, name: u.name || u.firstName || 'Unnamed'}));
       setTargets(list);
@@ -96,7 +96,7 @@ export default function Meetups({ auth }){
     const payload = { ...form };
     try {
       console.debug('[meetups] submitting', payload);
-      const res = await axios.post(import.meta.env.VITE_API_URL + '/meetups', payload, { headers:{ Authorization:`Bearer ${auth?.token}` }});
+  const res = await axios.post(import.meta.env.VITE_API_URL + '/meetups', payload);
       setEvents(ev=> [...ev, res.data]);
       setSuccess('Meetup created');
       setOpen(false);
@@ -198,7 +198,15 @@ export default function Meetups({ auth }){
                 <Paper
                   key={key}
                   variant="outlined"
-                  sx={{p:0.5, minHeight:90, bgcolor: inMonth? 'background.paper':'action.hover', position:'relative', cursor:'pointer', border:isToday? '2px solid #1976d2':undefined}}
+                  sx={{
+                    p:0.5,
+                    minHeight:90,
+                    bgcolor: inMonth? 'background.paper':'action.hover',
+                    position:'relative',
+                    cursor:'pointer',
+                    border: isToday ? '2px solid' : undefined,
+                    borderColor: isToday ? 'primary.main' : undefined
+                  }}
                   onClick={()=> { setSelectedDate(d); }}
                   onDoubleClick={()=> { if(inMonth){ openNewForDay(d); setSelectedDate(d); setViewMode('week'); } }}
                   title={inMonth? 'Click select / Double-click open day & switch to week' : ''}
@@ -249,7 +257,22 @@ export default function Meetups({ auth }){
                     const heightRatio = Math.max(0.05, endClamped.diff(start,'minute') / (16*60));
                     return (
                       <Tooltip title={ev.title} key={ev.id}>
-                        <Paper elevation={3} onClick={()=> setDetail(ev)} sx={{position:'absolute', left:4, right:4, top: `${topRatio*100}%`, height: `${heightRatio*100}%`, bgcolor: ev.status==='cancelled'? 'grey.400':'primary.light', color:'primary.contrastText', p:0.5, overflow:'hidden', cursor:'pointer'}}>
+                        <Paper
+                          elevation={3}
+                          onClick={()=> setDetail(ev)}
+                          sx={{
+                            position:'absolute',
+                            left:4,
+                            right:4,
+                            top: `${topRatio*100}%`,
+                            height: `${heightRatio*100}%`,
+                            bgcolor: ev.status==='cancelled'? 'action.disabledBackground':'primary.light',
+                            color:'primary.contrastText',
+                            p:0.5,
+                            overflow:'hidden',
+                            cursor:'pointer'
+                          }}
+                        >
                           <Typography noWrap sx={{fontSize:11, fontWeight:600}}>{start.format('HH:mm')} {ev.title}</Typography>
                         </Paper>
                       </Tooltip>
@@ -370,7 +393,10 @@ export default function Meetups({ auth }){
                   <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 600, mb: 1 }}>
                     Description
                   </Typography>
-                  <Typography variant="body2" sx={{whiteSpace:'pre-wrap', bgcolor: 'grey.50', p: 1, borderRadius: 1}}>
+                  <Typography
+                    variant="body2"
+                    sx={(theme)=> ({ whiteSpace:'pre-wrap', bgcolor: theme.palette.background.paper, p: 1, borderRadius: 1 })}
+                  >
                     {detail.description}
                   </Typography>
                 </Box>

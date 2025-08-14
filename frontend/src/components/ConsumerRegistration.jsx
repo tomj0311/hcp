@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Paper, Typography, TextField, Button, Stack, Alert, Grid, Divider } from '@mui/material';
 import axios from 'axios';
+import GoogleAuthButton from './GoogleAuthButton.jsx';
 
 export default function ConsumerRegistration({ admin=false, token }){
   const [form,setForm] = useState({ firstName:'', lastName:'', email:'', password:'', confirmPassword:'', phone:'', address1:'', address2:'', city:'', state:'', postalCode:'', country:'' });
@@ -13,8 +14,8 @@ export default function ConsumerRegistration({ admin=false, token }){
   const submit = async e => {
     e.preventDefault(); setLoading(true); setStatus('');
     try {
-      if(admin){
-  const res = await axios.post(import.meta.env.VITE_API_URL + '/users/consumers/admin', form, { headers:{ Authorization:`Bearer ${token}` }});
+    if(admin){
+  const res = await axios.post(import.meta.env.VITE_API_URL + '/users/consumers/admin', form);
         setStatus('Consumer created' + (res.data.tempPassword? ` (temp password: ${res.data.tempPassword})` : '')); setPhase('done');
       } else {
   const res = await axios.post(import.meta.env.VITE_API_URL + '/users/consumers', form);
@@ -35,6 +36,18 @@ export default function ConsumerRegistration({ admin=false, token }){
       {status && <Alert severity={status.toLowerCase().includes('fail')? 'error':'info'} sx={{mb:3}}>{status}</Alert>}
       {phase==='form' && (
         <>
+          {!admin && (
+            <>
+              <GoogleAuthButton text="Sign up with Google" />
+              
+              <Divider sx={{ my: 3 }}>
+                <Typography variant="body2" color="text.secondary">
+                  or sign up with email
+                </Typography>
+              </Divider>
+            </>
+          )}
+          
           <Typography variant="subtitle1" sx={{fontWeight:600, mb:1}}>Basic Information</Typography>
           <Grid container spacing={2} sx={{mb:2}}>
             <Grid item xs={12} sm={6}>

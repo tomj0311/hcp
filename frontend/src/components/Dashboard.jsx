@@ -11,8 +11,13 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
   const navigate = useNavigate();
 
   const loadProviders = async ()=>{
-    const res = await axios.get(import.meta.env.VITE_API_URL + '/users/providers', { headers:{ Authorization:`Bearer ${token}` }});
-    setProviders(res.data.sort((a,b)=> b.rank - a.rank).slice(0,12));
+    try {
+  const res = await axios.get(import.meta.env.VITE_API_URL + '/users/providers');
+      setProviders(res.data.sort((a,b)=> b.rank - a.rank).slice(0,12));
+    } catch (error) {
+      console.error('Error loading providers:', error);
+      // Error handling is now done by the axios interceptor
+    }
   };
 
   useEffect(()=>{ loadProviders(); },[]);
@@ -52,8 +57,19 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
                 <Typography variant="body2" sx={{opacity:0.9, fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Browse & manage top ranked providers.</Typography>
               </div>
               <Stack direction={{xs:'column', sm:'row'}} spacing={1}>
-                <Button variant="contained" color="inherit" size="small" onClick={() => navigate('/register/provider')} sx={{color:'black', bgcolor:'rgba(255,255,255,0.9)', '&:hover':{bgcolor:'white'}, fontSize:{xs:'0.75rem', sm:'0.875rem'}}}>Add Provider</Button>
-                <Button variant="outlined" color="inherit" size="small" onClick={loadProviders} sx={{borderColor:'rgba(255,255,255,0.6)', color:'white', fontSize:{xs:'0.75rem', sm:'0.875rem'}}}>Refresh</Button>
+                <Button variant="contained" color="inherit" size="small" onClick={() => navigate('/register/provider')} sx={(theme)=>({
+                  color: theme.palette.mode==='dark'? 'text.primary' : 'text.primary',
+                  bgcolor: theme.palette.mode==='dark'? 'background.paper' : 'common.white',
+                  opacity: 0.9,
+                  '&:hover':{bgcolor: theme.palette.mode==='dark'? 'background.paper' : 'common.white', opacity: 1},
+                  fontSize:{xs:'0.75rem', sm:'0.875rem'}
+                })}>Add Provider</Button>
+                <Button variant="outlined" color="inherit" size="small" onClick={loadProviders} sx={(theme)=>({
+                  borderColor: theme.palette.common.white,
+                  color: theme.palette.common.white,
+                  opacity: 0.9,
+                  fontSize:{xs:'0.75rem', sm:'0.875rem'}
+                })}>Refresh</Button>
               </Stack>
             </Paper>
           </Grid>
@@ -95,7 +111,14 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
             <Paper sx={({custom})=>({p:{xs:2, sm:3}, mb:{xs:2, sm:3}, background:custom.tiles.image.bg, color:custom.tiles.image.fg, boxShadow:'0 6px 26px -10px rgba(0,0,0,0.35)'})}>
               <Typography variant="h6" sx={{fontWeight:700, fontSize:{xs:'1rem', sm:'1.25rem'}}}>Find a Provider</Typography>
               <Typography variant="body2" sx={{opacity:0.9, fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Tap a provider card to schedule a meetup.</Typography>
-              <Button variant="contained" size="small" sx={{mt:2, color:'black', bgcolor:'rgba(255,255,255,0.9)', '&:hover':{bgcolor:'white'}, fontSize:{xs:'0.75rem', sm:'0.875rem'}}} onClick={loadProviders}>Refresh List</Button>
+              <Button variant="contained" size="small" sx={(theme)=>({
+                mt:2,
+                color: theme.palette.text.primary,
+                bgcolor: theme.palette.mode==='dark'? 'background.paper' : 'common.white',
+                opacity: 0.9,
+                '&:hover':{bgcolor: theme.palette.mode==='dark'? 'background.paper' : 'common.white', opacity: 1},
+                fontSize:{xs:'0.75rem', sm:'0.875rem'}
+              })} onClick={loadProviders}>Refresh List</Button>
             </Paper>
           </Grid>
           <Grid item xs={12} md={6}>

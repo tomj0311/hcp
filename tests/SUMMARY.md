@@ -6,6 +6,6 @@ This file will be updated manually or by future scripts to summarize Playwright 
 - Authentication & Protected Routes
   - Redirect unauthenticated to /login
   - Admin login persists
-  - Patient registration flow (dev token)
+  - Consumer registration flow (dev token)
 
 Add additional suites as features grow.

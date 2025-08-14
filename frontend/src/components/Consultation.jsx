@@ -41,7 +41,7 @@ export default function Consultation(){
   const [loading,setLoading] = useState(!provider);
   const [channel,setChannel] = useState('video'); // Default to video first
   const [messages,setMessages] = useState(()=>[
-  { id:'welcome', role:'system', text:'You are connected to the virtual provider. Your video consultation is ready to begin.' }
+  { id:'welcome', role:'system', text:'You are connected to your consultation provider. Your video consultation is ready to begin.' }
   ]);
   const [input,setInput] = useState('');
   const [sending,setSending] = useState(false);
@@ -80,7 +80,7 @@ export default function Consultation(){
       (async()=>{
         try {
       console.debug('[Consultation] fetching providers list to resolve id');
-      const res = await axios.get(import.meta.env.VITE_API_URL + '/users/providers', { headers: { Authorization: `Bearer ${localStorage.getItem('hcp_auth')? JSON.parse(localStorage.getItem('hcp_auth')).token: ''}` }});
+  const res = await axios.get(import.meta.env.VITE_API_URL + '/users/providers');
       const found = res.data.find(d=> String(d.id) === String(id));
       if(found) setProvider(found);
       else console.warn('[Consultation] provider not found for id', id);
@@ -99,9 +99,7 @@ export default function Consultation(){
     (async()=>{
       try {
         setMeetupError('');
-        const authRaw = localStorage.getItem('hcp_auth');
-        const token = authRaw? JSON.parse(authRaw).token : '';
-        const res = await axios.get(import.meta.env.VITE_API_URL + '/meetups/' + meetupId, { headers:{ Authorization: `Bearer ${token}` }});
+        const res = await axios.get(import.meta.env.VITE_API_URL + '/meetups/' + meetupId);
         if(!cancelled) setMeetup(res.data);
       } catch(err){
         if(!cancelled) setMeetupError(err?.response?.data?.error || 'Failed to load meetup');
@@ -307,7 +305,7 @@ export default function Consultation(){
     setSending(true);
     // Placeholder AI response simulation
     setTimeout(()=>{
-      setMessages(m=> [...m, { id: Date.now()+':ai', role:'assistant', text:'(Placeholder) A helpful, medically-aligned response will appear here. Avatar lip-sync + streaming will replace this in production.' }]);
+      setMessages(m=> [...m, { id: Date.now()+':ai', role:'assistant', text:'(Placeholder) A helpful, professionally-aligned response will appear here. Avatar lip-sync + streaming will replace this in production.' }]);
       setSending(false);
     }, 650);
   },[input]);
@@ -355,14 +353,11 @@ export default function Consultation(){
         formData.append('files', file);
       });
 
-      const token = localStorage.getItem('token');
-      
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/uploads/upload`,
         formData,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
           onUploadProgress: (progressEvent) => {
@@ -456,8 +451,8 @@ export default function Consultation(){
             bottom: 8, 
             left: '50%',
             transform: 'translateX(-50%)',
-            color: 'white',
-            backgroundColor: 'rgba(0,0,0,0.7)',
+            color: 'common.white',
+            backgroundColor: (theme)=> theme.palette.mode==='dark'? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.6)',
             px: 1.5,
             py: 0.5,
             borderRadius: 2,
@@ -607,7 +602,7 @@ export default function Consultation(){
           pr:{ xs:0.5, sm:1 },
           scrollbarWidth:'thin',
           '&::-webkit-scrollbar': { width: 8 },
-          '&::-webkit-scrollbar-thumb': { backgroundColor:'rgba(0,0,0,0.2)', borderRadius:4 }
+          '&::-webkit-scrollbar-thumb': (theme)=> ({ backgroundColor: theme.palette.action.disabled, borderRadius:4 })
         }} aria-label="conversation area">
           {channel==='voice' && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -656,9 +651,9 @@ export default function Consultation(){
                 borderRadius: theme.custom?.radii?.card || 8,
                 minHeight: { xs: 240, sm: 340, md: 400 },
                 background: theme.palette.mode==='dark'
-                  ? 'linear-gradient(135deg,#1f1f1f 0%,#141414 65%)'
-                  : 'linear-gradient(135deg,#e3f2fd 0%,#bbdefb 65%)',
-                boxShadow: theme.palette.mode==='dark'? 'inset 0 0 0 1px #262626' : 'inset 0 0 0 1px #d5dbe3',
+                  ? `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 65%)`
+                  : `linear-gradient(135deg, ${theme.palette.action.hover} 0%, ${theme.palette.background.paper} 65%)`,
+                boxShadow: `inset 0 0 0 1px ${theme.palette.divider}`,
                 position: 'relative',
                 overflow: 'hidden'
               })} aria-label="video call interface">
@@ -720,16 +715,16 @@ export default function Consultation(){
               <Box sx={{ flexGrow: 1, overflowY: 'auto', maxHeight: { xs: 160, sm: 200 }, pr:0.5 }}>
                 {messages.map(m=> (
                   <Stack key={m.id} alignItems={m.role==='user'? 'flex-end':'flex-start'} sx={{mb:1.5}}>
-                    <Paper variant="outlined" sx={({palette})=>({
+                    <Paper variant="outlined" sx={({palette, theme})=>({
                       px:2, py:1.5,
                       maxWidth:'85%',
                       background: m.role==='user'
-                        ? (palette.mode==='dark' ? 'linear-gradient(135deg,#1273ea 0%,#1565c0 85%)':'linear-gradient(135deg,#1273ea 0%,#0d5fb1 85%)')
+                        ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 85%)`
                         : m.role==='system'
-                        ? (palette.mode==='dark'? '#2a2a2a':'#e8f5e8')
-                        : (palette.mode==='dark'? '#1e1e1e':'#f5f7fb'),
-                      color: m.role==='user'? '#fff': undefined,
-                      borderColor: m.role==='user'? 'transparent': (palette.mode==='dark'? '#272727':'#dfe3ea'),
+                        ? (palette.mode==='dark'? theme.palette.action.selected : theme.palette.success.lighter)
+                        : (palette.mode==='dark'? theme.palette.background.paper : theme.palette.background.default),
+                      color: m.role==='user'? 'common.white': undefined,
+                      borderColor: m.role==='user'? 'transparent': 'divider',
                       boxShadow: m.role==='user'? '0 4px 16px -6px rgba(0,0,0,0.45)':'none'
                     })} aria-label={m.role==='user'? 'user message': m.role==='system'? 'system message':'ai message'}>
                       <Typography variant="body2" sx={{fontSize:{xs:'0.8rem', sm:'0.85rem'}, lineHeight: 1.4}}>{m.text}</Typography>
@@ -744,7 +739,7 @@ export default function Consultation(){
                                 fontSize: '0.7rem', 
                                 mr: 0.5, 
                                 mb: 0.5,
-                                backgroundColor: m.role === 'user' ? 'rgba(255,255,255,0.2)' : undefined
+                                backgroundColor: m.role === 'user' ? (theme)=> theme.palette.action.hover : undefined
                               }}
                             />
                           ))}
@@ -762,16 +757,16 @@ export default function Consultation(){
             <>
               {messages.map(m=> (
                 <Stack key={m.id} alignItems={m.role==='user'? 'flex-end':'flex-start'} sx={{mb:2}}>
-                  <Paper variant="outlined" sx={({palette})=>({
+                  <Paper variant="outlined" sx={({palette, theme})=>({
                     px:2, py:1.5,
                     maxWidth:'85%',
                     background: m.role==='user'
-                      ? (palette.mode==='dark' ? 'linear-gradient(135deg,#1273ea 0%,#1565c0 85%)':'linear-gradient(135deg,#1273ea 0%,#0d5fb1 85%)')
+                      ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 85%)`
                       : m.role==='system'
-                      ? (palette.mode==='dark'? '#2a2a2a':'#e8f5e8')
-                      : (palette.mode==='dark'? '#1e1e1e':'#f5f7fb'),
-                    color: m.role==='user'? '#fff': undefined,
-                    borderColor: m.role==='user'? 'transparent': (palette.mode==='dark'? '#272727':'#dfe3ea'),
+                      ? (palette.mode==='dark'? theme.palette.action.selected : theme.palette.success.lighter)
+                      : (palette.mode==='dark'? theme.palette.background.paper : theme.palette.background.default),
+                    color: m.role==='user'? 'common.white': undefined,
+                    borderColor: m.role==='user'? 'transparent': 'divider',
                     boxShadow: m.role==='user'? '0 4px 16px -6px rgba(0,0,0,0.45)':'none'
                   })} aria-label={m.role==='user'? 'user message': m.role==='system'? 'system message':'ai message'}>
                     <Typography variant="body1" sx={{fontSize:{xs:'0.9rem', sm:'1rem'}, lineHeight: 1.5}}>{m.text}</Typography>
@@ -786,7 +781,7 @@ export default function Consultation(){
                               fontSize: '0.8rem', 
                               mr: 0.5, 
                               mb: 0.5,
-                              backgroundColor: m.role === 'user' ? 'rgba(255,255,255,0.2)' : undefined
+                              backgroundColor: m.role === 'user' ? (theme)=> theme.palette.action.hover : undefined
                             }}
                           />
                         ))}
@@ -931,7 +926,7 @@ export default function Consultation(){
               border: '2px solid',
               borderColor: 'primary.main',
               bgcolor: input.trim() ? 'primary.main' : 'background.paper',
-              color: input.trim() ? 'white' : 'primary.main',
+              color: input.trim() ? 'common.white' : 'primary.main',
               flexShrink: 0,
               '&:hover': {
                 borderRadius: '50%',
@@ -939,8 +934,8 @@ export default function Consultation(){
                 color: 'white'
               },
               '&:disabled': {
-                borderColor: 'grey.300',
-                color: 'grey.400'
+                borderColor: 'divider',
+                color: 'text.disabled'
               }
             }}
           >
@@ -949,7 +944,7 @@ export default function Consultation(){
         </Stack>
         <Typography variant="body2" color="text.secondary" sx={{mt:1.5, fontSize:{xs:'0.8rem', sm:'0.85rem'}, textAlign: 'center', lineHeight: 1.4}}>
           This is a secure consultation platform. Your privacy is protected. 
-          Video and voice calls connect you directly with healthcare professionals.
+          Video and voice calls connect you directly with professional consultants.
         </Typography>
       </Paper>
     </Box>

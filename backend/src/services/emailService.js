@@ -40,7 +40,7 @@ export async function sendRegistrationEmail(to, role, verifyToken){
     const html = `
       <div style="font-family:Arial,Helvetica,sans-serif;line-height:1.5;font-size:15px;color:#222;">
         <h2 style="margin:0 0 16px;">Welcome${role? ' '+role.charAt(0).toUpperCase()+role.slice(1):''}!</h2>
-        <p>Thank you for registering as a <strong>${role}</strong> on the HealthCare Platform.</p>
+        <p>Thank you for registering as a <strong>${role}</strong> on the ConsultFlow Platform.</p>
         ${verifyToken ? `
         <p>Please verify your email to activate your account.</p>
         <p style="background:#f5f5f5;padding:12px 16px;border-radius:6px;font-size:14px;letter-spacing:1px;text-align:center;"><strong>Verification Code:</strong><br><span style="font-size:18px;">${verifyToken}</span></p>
@@ -53,7 +53,7 @@ export async function sendRegistrationEmail(to, role, verifyToken){
     await transport.sendMail({
       from: process.env.EMAIL_FROM || process.env.SMTP_USER,
       to,
-      subject: verifyToken ? 'Verify your email address' : `Welcome to HealthCare Platform (${role})`,
+      subject: verifyToken ? 'Verify your email address' : `Welcome to ConsultFlow Platform (${role})`,
       html
     });
   } catch(err){

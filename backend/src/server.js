@@ -7,12 +7,14 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import session from 'express-session';
 import { WebSocketServer } from 'ws';
 import authRouter from './routes/auth.js';
 import userRouter from './routes/users.js';
 import paymentRouter from './routes/payments.js';
 import uploadsRouter from './routes/uploads.js';
 import meetupsRouter from './routes/meetups.js';
+import profileRouter from './routes/profile.js';
 import { initMatchmaking } from './ws/matchmaking.js';
 import { verifyTokenMiddleware } from './utils/auth.js';
 import { seedProviders } from './services/seedProviders.js';
@@ -20,7 +22,16 @@ import { seedProviders } from './services/seedProviders.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Load environment variables FIRST
 dotenv.config();
+
+// Debug: Check if Google OAuth variables are loaded
+console.log('🔍 Environment Variables Check:');
+console.log('- GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'Loaded ✅' : 'Missing ❌');
+console.log('- GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'Loaded ✅' : 'Missing ❌');
+
+// Import passport AFTER dotenv config
+import passport from './config/passport.js';
 
 // Basic startup diagnostics (non-sensitive)
 if(!process.env.JWT_SECRET){
@@ -46,10 +57,23 @@ app.use(cors({ origin: process.env.CLIENT_URL || '*'}));
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Session configuration for Google OAuth
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dev_session_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false } // Set to true in production with HTTPS
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.get('/health', (req,res)=> res.json({status:'ok'}));
 app.use('/auth', authRouter);
 // Users router now internally protects only the routes that require auth.
 app.use('/users', userRouter);
+app.use('/profile', profileRouter);
 app.use('/payments', verifyTokenMiddleware, paymentRouter);
 app.use('/uploads', uploadsRouter);
 app.use('/meetups', meetupsRouter);

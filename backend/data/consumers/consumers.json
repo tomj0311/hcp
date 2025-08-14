@@ -17,5 +17,24 @@
     "country": "AE",
     "email": "tomj0311@gmail.com",
     "emailOriginal": "tomj0311@gmail.com"
+  },
+  {
+    "id": "f9b76f26-c395-4905-ba21-b0e0a898740c",
+    "role": "consumer",
+    "active": true,
+    "googleId": "108494383231424289319",
+    "firstName": "hub8",
+    "lastName": "ai",
+    "name": "hub8 ai",
+    "email": "hub8ai@gmail.com",
+    "emailOriginal": "hub8ai@gmail.com",
+    "emailVerified": true,
+    "authProvider": "google",
+    "createdAt": 1755085475936,
+    "password": "$2b$10$XNNDvGeYOKStfXg1s3rNz.eKLgds0zHpLZcQsdW4hgrCmEAo5JSAq",
+    "phone": "+9719710303687",
+    "address1": "Reem Island",
+    "state": "Abudhabi",
+    "country": "AE"
   }
 ]

@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcrypt';
+import passport from '../config/passport.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,5 +63,34 @@ router.post('/login', [body('username').notEmpty(), body('password').notEmpty()]
   }
   return res.status(401).json({error:'invalid credentials'});
 });
+
+// Google OAuth routes
+router.get('/google', (req, res, next) => {
+  console.log('🚀 Google OAuth route hit');
+  console.log('Environment variables:');
+  console.log('- GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'Set' : 'Missing');
+  console.log('- GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'Set' : 'Missing');
+  
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
+
+router.get('/google/callback',
+  passport.authenticate('google', { session: false }),
+  (req, res) => {
+    console.log('🔄 Google OAuth callback hit');
+    console.log('User:', req.user);
+    
+    // Generate JWT token for the authenticated user
+    const token = generateToken({ 
+      role: req.user.role, 
+      id: req.user.id, 
+      email: req.user.email 
+    });
+    
+    // Redirect to frontend with token
+    const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+    res.redirect(`${clientUrl}/auth/callback?token=${token}&role=${req.user.role}&name=${encodeURIComponent(req.user.name)}`);
+  }
+);
 
 export default router;

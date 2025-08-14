@@ -21,7 +21,7 @@ test.describe('Authentication & Protected Routes', () => {
     await expect(page.getByText('Dashboard')).toBeVisible();
   });
 
-  test('patient registration + verification + patient login flow', async ({ page }) => {
+  test('consumer registration + verification + consumer login flow', async ({ page }) => {
     test.slow();
     await page.goto('/login');
     // Admin login to access registration page (protected)
@@ -32,8 +32,8 @@ test.describe('Authentication & Protected Routes', () => {
 
     // Go to registration
     await page.goto('/register');
-    await page.getByRole('button', { name: 'Patient' }).click();
-    await page.getByLabel('Name').fill('Test Patient');
+    await page.getByRole('button', { name: 'Consumer' }).click();
+    await page.getByLabel('Name').fill('Test Consumer');
     const email = `test${Date.now()}@example.com`;
     const password = 'secret12';
     await page.getByLabel('Email').fill(email);
@@ -53,13 +53,13 @@ test.describe('Authentication & Protected Routes', () => {
     await page.getByRole('button', { name: 'Logout' }).click();
     await expect(page).toHaveURL(/login/);
 
-    // Switch to patient login mode and login with new patient credentials
-    await page.getByRole('button', { name: 'Patient' }).click();
+    // Switch to consumer login mode and login with new consumer credentials
+    await page.getByRole('button', { name: 'Consumer' }).click();
     await page.getByLabel('username').fill(email); // field label changes based on mode
     await page.getByLabel('password').fill(password);
     await page.getByLabel('login button').click();
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByText('Patient Dashboard')).toBeVisible();
+    await expect(page.getByText('Consumer Dashboard')).toBeVisible();
   });
 
   test('invalid login shows error', async ({ page }) => {

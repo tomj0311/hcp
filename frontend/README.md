@@ -1,6 +1,6 @@
-# Healthcare Platform Frontend
+# ConsultFlow Platform Frontend
 
-React + Material UI dashboard for virtual doctor consultations.
+React + Material UI dashboard for virtual consultations.
 
 Environment variable examples (create `.env` in root):
 
