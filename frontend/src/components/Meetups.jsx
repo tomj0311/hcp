@@ -31,7 +31,7 @@ export default function Meetups({ auth }){
   const [loadingTargets,setLoadingTargets] = useState(false);
   const [error,setError] = useState('');
   const [success,setSuccess] = useState('');
-  const [viewMode,setViewMode] = useState('month'); // 'month' | 'week'
+  const [viewMode,setViewMode] = useState('month'); // 'month' | 'week' | 'day'
   const [selectedDate,setSelectedDate] = useState(dayjs());
   const location = useLocation();
   const navigate = useNavigate();
@@ -188,16 +188,23 @@ export default function Meetups({ auth }){
               <Button size="small" variant="outlined" onClick={()=> setSelectedDate(d=> d.add(1,'week'))}>Next</Button>
             </>
           )}
+          {viewMode==='day' && (
+            <>
+              <Button size="small" variant="outlined" onClick={()=> setSelectedDate(d=> d.subtract(1,'day'))}>Prev</Button>
+              <Button size="small" variant="outlined" onClick={()=> setSelectedDate(d=> d.add(1,'day'))}>Next</Button>
+            </>
+          )}
           <Button size="small" variant={viewMode==='month'?'contained':'outlined'} onClick={()=> setViewMode('month')}>Month</Button>
           <Button size="small" variant={viewMode==='week'?'contained':'outlined'} onClick={()=> setViewMode('week')}>Week</Button>
+          <Button size="small" variant={viewMode==='day'?'contained':'outlined'} onClick={()=> setViewMode('day')}>Day</Button>
           {(auth?.role==='consumer' || auth?.role==='provider') && (
             <Button size="small" startIcon={<AddIcon />} variant="contained" onClick={()=> setOpen(true)}>New</Button>
           )}
         </Stack>
       </Stack>
       {viewMode==='month' && (
-        <>
-          <Typography variant="subtitle2" sx={{mb:1}}>{month.format('MMMM YYYY')}</Typography>
+        <Paper sx={{ p: 3, boxShadow: 3, borderRadius: 2 }}>
+          <Typography variant="subtitle2" sx={{mb:2}}>{month.format('MMMM YYYY')}</Typography>
           <Box sx={{display:'grid', gridTemplateColumns:'repeat(7, 1fr)', gap:0.5}}>
             {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=> <Box key={d} sx={{fontSize:12, fontWeight:600, textAlign:'center', opacity:0.7}}>{d}</Box>)}
             {monthDays.map(d=>{
@@ -235,12 +242,12 @@ export default function Meetups({ auth }){
               );
             })}
           </Box>
-        </>
+        </Paper>
       )}
 
       {viewMode==='week' && (
-        <Box>
-          <Typography variant="subtitle2" sx={{mb:1}}>{weekStart.format('MMM D')} - {weekStart.add(6,'day').format('MMM D, YYYY')}</Typography>
+        <Paper sx={{ p: 3, boxShadow: 3, borderRadius: 2 }}>
+          <Typography variant="subtitle2" sx={{mb:2}}>{weekStart.format('MMM D')} - {weekStart.add(6,'day').format('MMM D, YYYY')}</Typography>
           <Box sx={{display:'grid', gridTemplateColumns:'60px repeat(7,1fr)', border: '1px solid', borderColor:'divider', height:600, position:'relative', overflow:'hidden', borderRadius:(t)=> t.custom?.radii?.card || 4}}>
             {/* Hour labels */}
             <Box sx={{borderRight:'1px solid', borderColor:'divider', position:'relative'}}>
@@ -297,7 +304,109 @@ export default function Meetups({ auth }){
               );
             })}
           </Box>
-        </Box>
+        </Paper>
+      )}
+
+      {viewMode==='day' && (
+        <Paper sx={{ p: 3, boxShadow: 3, borderRadius: 2 }}>
+          <Typography variant="subtitle2" sx={{mb:2}}>{selectedDate.format('dddd, MMMM D, YYYY')}</Typography>
+          <Box sx={{display:'grid', gridTemplateColumns:'80px 1fr', border: '1px solid', borderColor:'divider', height:600, position:'relative', overflow:'hidden', borderRadius:2}}>
+            {/* Hour labels */}
+            <Box sx={{borderRight:'1px solid', borderColor:'divider', position:'relative', bgcolor:'background.paper'}}>
+              {hours.map(h=> (
+                <Box key={h} sx={{position:'absolute', top: ((h-6)/16)*100+'%', fontSize:12, transform:'translateY(-6px)', pl:1, fontWeight:500}}>{String(h).padStart(2,'0')}:00</Box>
+              ))}
+            </Box>
+            {/* Day column */}
+            <Box sx={{position:'relative', bgcolor:selectedDate.isSame(dayjs(),'day')? 'action.hover':'transparent'}} onDoubleClick={()=> openNewForDay(selectedDate)}>
+              <Box sx={{position:'sticky', top:0, bgcolor:selectedDate.isSame(dayjs(),'day')? 'primary.main':'background.paper', color:selectedDate.isSame(dayjs(),'day')? 'primary.contrastText':'text.primary', fontSize:14, textAlign:'center', py:1, fontWeight:600, borderBottom:'1px solid', borderColor:'divider'}}>
+                {selectedDate.format('dddd D')}
+              </Box>
+              {(() => {
+                const key = selectedDate.format('YYYY-MM-DD');
+                const dayEvents = eventsByDay[key] || [];
+                return dayEvents.map(ev=>{
+                  const start = dayjs(ev.start);
+                  const end = dayjs(ev.end);
+                  const dayStart = selectedDate.hour(6).minute(0);
+                  const dayEnd = selectedDate.hour(22).minute(0);
+                  if(end.isBefore(dayStart) || start.isAfter(dayEnd)) return null;
+                  const topRatio = Math.max(0, start.diff(dayStart,'minute') / (16*60));
+                  const endClamped = end.isAfter(dayEnd)? dayEnd : end;
+                  const heightRatio = Math.max(0.05, endClamped.diff(start,'minute') / (16*60));
+                  return (
+                    <Tooltip title={`${ev.title}\n${start.format('HH:mm')} - ${end.format('HH:mm')}`} key={ev.id}>
+                      <Paper
+                        elevation={3}
+                        onClick={()=> setDetail(ev)}
+                        sx={{
+                          position:'absolute',
+                          left:8,
+                          right:8,
+                          top: `${topRatio*100}%`,
+                          height: `${heightRatio*100}%`,
+                          bgcolor: ev.status==='cancelled'? 'action.disabledBackground':'primary.light',
+                          color:'primary.contrastText',
+                          p:1,
+                          overflow:'hidden',
+                          cursor:'pointer',
+                          display:'flex',
+                          flexDirection:'column',
+                          justifyContent:'center',
+                          '&:hover': {
+                            elevation: 5,
+                            bgcolor: ev.status==='cancelled'? 'action.disabledBackground':'primary.main'
+                          }
+                        }}
+                      >
+                        <Typography sx={{fontSize:13, fontWeight:600, lineHeight:1.2}}>{start.format('HH:mm')} - {end.format('HH:mm')}</Typography>
+                        <Typography sx={{fontSize:12, opacity:0.9, lineHeight:1.2, mt:0.5}} noWrap>{ev.title}</Typography>
+                        {ev.description && (
+                          <Typography sx={{fontSize:10, opacity:0.8, lineHeight:1.2, mt:0.5}} noWrap>{ev.description}</Typography>
+                        )}
+                      </Paper>
+                    </Tooltip>
+                  );
+                });
+              })()}
+              {/* Hour grid lines */}
+              {hours.map(h=> (
+                <Box key={h} sx={{position:'absolute', top: ((h-6)/16)*100+'%', left:0, right:0, borderTop:'1px dashed', borderColor:'divider', opacity:0.5}} />
+              ))}
+              {/* Current time indicator for today */}
+              {selectedDate.isSame(dayjs(),'day') && (() => {
+                const now = dayjs();
+                const dayStart = selectedDate.hour(6).minute(0);
+                const dayEnd = selectedDate.hour(22).minute(0);
+                if(now.isAfter(dayStart) && now.isBefore(dayEnd)) {
+                  const ratio = now.diff(dayStart,'minute') / (16*60);
+                  return (
+                    <Box sx={{
+                      position:'absolute',
+                      top: `${ratio*100}%`,
+                      left:0,
+                      right:0,
+                      borderTop:'2px solid',
+                      borderColor:'error.main',
+                      zIndex:10,
+                      '&::before': {
+                        content:'""',
+                        position:'absolute',
+                        left:-4,
+                        top:-4,
+                        width:8,
+                        height:8,
+                        borderRadius:'50%',
+                        bgcolor:'error.main'
+                      }
+                    }} />
+                  );
+                }
+                return null;
+              })()}
+            </Box>
+          </Box>
+        </Paper>
       )}
 
       <Dialog open={open} onClose={()=> setOpen(false)} maxWidth="sm" fullWidth>
