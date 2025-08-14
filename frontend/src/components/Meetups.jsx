@@ -136,11 +136,18 @@ export default function Meetups({ auth }){
   const joinMeeting = (ev)=>{
     if(!ev) return;
     
+    console.log('[Meetups] joinMeeting called with event:', ev);
+    console.log('[Meetups] Current auth role:', auth?.role);
+    
     const cp = findCounterpart(ev); // counterpart (other party)
+    console.log('[Meetups] Counterpart found:', cp);
+    
     // Determine providerId from event (independent of counterpart availability)
     const providerId = ev.requesterRole === 'provider'
       ? ev.requesterId
       : (ev.participantRole === 'provider' ? ev.participantId : null);
+      
+    console.log('[Meetups] Determined providerId:', providerId);
       
     if(auth?.role === 'consumer'){
       // For consumer, counterpart should be provider; if targets not yet loaded, fallback to providerId
@@ -148,6 +155,7 @@ export default function Meetups({ auth }){
         console.error('[Meetups] No providerId found for consumer navigation');
         return;
       }
+      console.log('[Meetups] Consumer navigating to consultation with providerId:', providerId);
       navigate(`/consult/${providerId}`,
         { state:{ provider: cp && ev.participantRole === 'provider' || ev.requesterRole === 'provider'? cp : (cp? cp : { id: providerId }), meetupId: ev.id } });
     } else if(auth?.role === 'provider') {
@@ -155,8 +163,11 @@ export default function Meetups({ auth }){
         console.error('[Meetups] No providerId found for provider navigation');
         return;
       }
+      console.log('[Meetups] Provider navigating to consultation with providerId:', providerId);
       // Provider navigates with own providerId; no provider object passed so Consultation fetches it
       navigate(`/consult/${providerId}`, { state:{ meetupId: ev.id } });
+    } else {
+      console.error('[Meetups] Unknown user role for navigation:', auth?.role);
     }
   };
 

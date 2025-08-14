@@ -30,10 +30,14 @@ import axios from 'axios';
  * Focus: polished UI, accessible, aligned with theme aesthetics.
  */
 export default function Consultation(){
+  console.log('[Consultation] Component mounting...');
+  
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   
+  console.log('[Consultation] Route params and hooks initialized', { id, locationState: location.state });
+
   const [provider,setProvider] = useState(location.state?.provider || null);
   const meetupId = location.state?.meetupId || null;
   const [meetup,setMeetup] = useState(null);
@@ -76,18 +80,26 @@ export default function Consultation(){
   // Debug initial state
   // eslint-disable-next-line no-console
   console.debug('[Consultation] init', { routeId:id, meetupId, providerFromState: !!location.state?.provider });
+  console.debug('[Consultation] location.state:', location.state);
+  console.debug('[Consultation] current provider:', provider);
+  
   if(!provider){
       (async()=>{
         try {
       console.debug('[Consultation] fetching providers list to resolve id');
   const res = await axios.get(import.meta.env.VITE_API_URL + '/users/providers');
+      console.debug('[Consultation] providers response:', res.data);
       const found = res.data.find(d=> String(d.id) === String(id));
+      console.debug('[Consultation] found provider:', found);
       if(found) setProvider(found);
       else console.warn('[Consultation] provider not found for id', id);
-        } catch(e){ /* silent */ }
+        } catch(e){ 
+          console.error('[Consultation] error fetching providers:', e);
+        }
         setLoading(false);
       })();
     } else {
+      console.debug('[Consultation] provider already available from state');
       setLoading(false);
     }
   },[provider,id]);
@@ -715,14 +727,14 @@ export default function Consultation(){
               <Box sx={{ flexGrow: 1, overflowY: 'auto', maxHeight: { xs: 160, sm: 200 }, pr:0.5 }}>
                 {messages.map(m=> (
                   <Stack key={m.id} alignItems={m.role==='user'? 'flex-end':'flex-start'} sx={{mb:1.5}}>
-                    <Paper variant="outlined" sx={({palette, theme})=>({
+                    <Paper variant="outlined" sx={(theme)=>({
                       px:2, py:1.5,
                       maxWidth:'85%',
                       background: m.role==='user'
                         ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 85%)`
                         : m.role==='system'
-                        ? (palette.mode==='dark'? theme.palette.action.selected : theme.palette.success.lighter)
-                        : (palette.mode==='dark'? theme.palette.background.paper : theme.palette.background.default),
+                        ? (theme.palette.mode==='dark'? theme.palette.action.selected : theme.palette.success.lighter)
+                        : (theme.palette.mode==='dark'? theme.palette.background.paper : theme.palette.background.default),
                       color: m.role==='user'? 'common.white': undefined,
                       borderColor: m.role==='user'? 'transparent': 'divider',
                       boxShadow: m.role==='user'? '0 4px 16px -6px rgba(0,0,0,0.45)':'none'
@@ -757,14 +769,14 @@ export default function Consultation(){
             <>
               {messages.map(m=> (
                 <Stack key={m.id} alignItems={m.role==='user'? 'flex-end':'flex-start'} sx={{mb:2}}>
-                  <Paper variant="outlined" sx={({palette, theme})=>({
+                  <Paper variant="outlined" sx={(theme)=>({
                     px:2, py:1.5,
                     maxWidth:'85%',
                     background: m.role==='user'
                       ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 85%)`
                       : m.role==='system'
-                      ? (palette.mode==='dark'? theme.palette.action.selected : theme.palette.success.lighter)
-                      : (palette.mode==='dark'? theme.palette.background.paper : theme.palette.background.default),
+                      ? (theme.palette.mode==='dark'? theme.palette.action.selected : theme.palette.success.lighter)
+                      : (theme.palette.mode==='dark'? theme.palette.background.paper : theme.palette.background.default),
                     color: m.role==='user'? 'common.white': undefined,
                     borderColor: m.role==='user'? 'transparent': 'divider',
                     boxShadow: m.role==='user'? '0 4px 16px -6px rgba(0,0,0,0.45)':'none'

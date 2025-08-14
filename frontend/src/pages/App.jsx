@@ -15,10 +15,16 @@ import EmailVerify from '../components/EmailVerify.jsx';
 import Meetups from '../components/Meetups.jsx';
 import AuthCallback from '../components/AuthCallback.jsx';
 import ProfileCompletion from '../components/ProfileCompletion.jsx';
+import ErrorBoundary from '../components/ErrorBoundary.jsx';
 import { setupAxiosInterceptors } from '../utils/auth.js';
 
 function ProtectedRoute({ auth, children }){
-  if(!auth) return <Navigate to="/login" replace />;
+  console.log('[ProtectedRoute] auth state:', auth);
+  if(!auth) {
+    console.log('[ProtectedRoute] No auth, redirecting to login');
+    return <Navigate to="/login" replace />;
+  }
+  console.log('[ProtectedRoute] Auth valid, rendering children');
   return children;
 }
 function AdminRoute({ auth, children }){
