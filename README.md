@@ -1,105 +1,145 @@
 # ConsultFlow Platform Monorepo
 
-Full-stack prototype for generic provider ↔ consumer interactions (originally virtual consultations).
+Full‑stack prototype for provider ↔ consumer interactions (virtual consultations).
 
 ## Structure
-- `backend/` Express + WebSocket API, Stripe integration, temporary JSON storage (now `data/providers/` & `data/consumers/`).
-- `frontend/` React + MUI dashboard with dark/light themes.
+- `backend/` Express REST API + WebSocket, JWT auth, Google OAuth, Stripe, Nodemailer, JSON file storage under `backend/data/`.
+- `frontend/` React + Vite + Material UI dashboard with dark/light themes.
+- `tests/` Playwright E2E.
 
-## Features Implemented (Checklist)
-1. User login (admin hardcoded via env) ✔
-2. Dashboard layout inspired by provided image ✔ (cards, dark style, togglable theme)
-3. Platform arrangement showing ranked providers ✔ (sorted by rank, top list)
-4. Provider & consumer registration screens (simplified unified form) ✔
-5. Intuitive UI/UX with responsive Material UI layout ✔ (cards, spacing, accessible labels)
-6. Security via optional TLS for WebSockets & REST when cert/key env vars provided ✔
-7. Material UI with dark & light themes; default dark styling similar to screenshot ✔
-8. Spacing & alignment with consistent MUI spacing scale (WCAG-friendly labels, color contrast adjustable via theme) ✔
-9. Email verification emails (Nodemailer via SMTP/Gmail) ✔
-10. Stripe payment integration (checkout session endpoint & pricing UI) ✔
-11. Pricing page with freemium, per consultation ($50), enterprise ($100) tiers ✔
-12. **Google OAuth Authentication & Registration** ✔
-    - Sign in/up with Google for both consumers and providers
-    - Automatic profile creation with Google-verified emails
-    - Profile completion flow for users who need to add additional details
-    - Seamless integration with existing JWT authentication system
+## Quick start
+Backend (API at http://localhost:4000):
+1) Copy `backend/.env.example` to `backend/.env` and set values (see Env Vars below).
+2) In a terminal:
+    - Windows cmd
+    - cd backend
+    - npm install
+    - npm run dev
 
-## Google OAuth Setup
-
-The platform now supports Google OAuth for streamlined registration and authentication. See `GOOGLE_OAUTH_SETUP.md` for detailed configuration instructions.
-
-### Quick OAuth Setup:
-1. Set up Google Cloud Console project with OAuth 2.0 credentials
-2. Add environment variables to `backend/.env`:
-   ```bash
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
-   SESSION_SECRET=your_session_secret
-   ```
-3. Users can now register/login using "Continue with Google" buttons
-
-## TODO / Next Steps
-// Email send now implemented with verification tokens.
-- Add form validations & better accessibility audits (ARIA roles, focus management, contrast tests).
-- Persist users in a real database.
-- Add provider availability & real matchmaking logic.
-- Add WebSocket auth (pass token and verify on connection).
-
-## Quick Start
-Backend:
-1. Copy `backend/.env.example` to `backend/.env` and set credentials.
-2. `cd backend && npm install && npm run dev`.
-
-Frontend:
-1. Create `frontend/.env` with:
-```
-VITE_API_URL=http://localhost:4000
-VITE_WS_URL=ws://localhost:4000/ws
-```
-2. `cd frontend && npm install && npm run dev`.
+Frontend (Vite dev server at http://localhost:5173):
+1) Create `frontend/.env`:
+    VITE_API_URL=http://localhost:4000
+    VITE_WS_URL=ws://localhost:4000/ws
+2) In a second terminal:
+    - Windows cmd
+    - cd frontend
+    - npm install
+    - npm run dev
 
 Open http://localhost:5173
 
-## Testing & Reports
-- Run E2E tests: `npm run test:e2e`
-- After run, open HTML report locally: `npm run test:report`
-- CI uploads artifact named `playwright-html-report` containing the HTML report.
-# ConsultFlow Virtual Backend
+## Environment variables (backend/.env)
+See `backend/.env.example` for the full list. Key settings:
+- PORT=4000
+- CLIENT_URL=http://localhost:5173
+- ADMIN_USER=admin, ADMIN_PASS=123 (admin login)
+- JWT_SECRET, SESSION_SECRET
+- GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (see Google OAuth below)
+- SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, EMAIL_FROM (verification emails)
+- STRIPE_SECRET_KEY
+- Optional TLS: TLS_KEY, TLS_CERT (switches server to HTTPS and WSS)
 
-Implements Express API + WebSocket for realtime consult requests.
+Frontend env (`frontend/.env`):
+- VITE_API_URL=http://localhost:4000
+- VITE_WS_URL=ws://localhost:4000/ws
 
 ## Features
-- Auth with hardcoded admin credentials (see `.env.example`).
-- JWT issuance.
-- Temp JSON file storage for providers & consumers in `data/providers/` & `data/consumers/`.
-- Stripe checkout session endpoint.
-- WebSocket channel `/ws` for consult matchmaking.
-- Optional TLS if `TLS_KEY` & `TLS_CERT` env vars provided.
+- Email/password auth for consumers and providers; admin login via env.
+- Google OAuth sign‑in/up with automatic consumer account creation and profile completion flow.
+- JWT‑protected routes, axios interceptors that auto‑attach token and redirect on 401.
+- Provider listing and self‑registration; consumer registration with email verification.
+- Meetups (1:1 events) CRUD and listing for a user.
+- File uploads per user (200MB per file; 10 files per request) stored under `backend/data/uploads/<email>/`.
+- Stripe Checkout session creation endpoint (pricing page in UI).
+- WebSocket `/ws` broadcast channel with optional `?token=` for identity.
 
-## Quick start
-1. Copy `.env.example` to `.env` and adjust values.
-2. Install deps: `npm install`.
-3. Run dev: `npm run dev`.
+## API overview
+Base URL: `http://localhost:4000`
 
-## Email (Verification) Setup
-You can send real verification emails using either a local SMTP catcher or Gmail.
+Public
+- GET /health → { status: ok }
+- POST /auth/login { username,password } → { token, role }
+- GET /auth/google → Google OAuth (redirect)
+- GET /auth/google/callback → redirects to CLIENT_URL with token
 
-### Option A: Local Dev (MailDev / MailHog)
-Run a local SMTP server (e.g., MailDev) on port 1025 and keep the default `.env.example` values. Emails will appear in the MailDev UI.
+Users/Accounts
+- POST /users/consumers → register consumer (sends verify email, returns verifyToken in dev)
+- POST /users/consumers/verify { token } → activate consumer
+- POST /users/consumers/login { email,password } → basic login
+- GET /users/providers (JWT) → list providers
+- POST /users/providers → provider self‑registration
+- GET /users/consumers (JWT) → list consumers
+- POST /users/consumers/admin (JWT admin) → create active consumer directly
 
-### Option B: Gmail (hub8ai@gmail.com)
-1. In Gmail account settings enable 2FA.
-2. Create an App Password (select App: Mail, Device: Other) and copy the 16‑character password.
-3. In `backend/.env` set:
-```
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=hub8ai@gmail.com
-SMTP_PASS=YOUR_APP_PASSWORD
-EMAIL_FROM="ConsultFlow Platform <hub8ai@gmail.com>"
-```
-4. Restart the backend. New consumer registrations will send a verification code + link.
+Profile
+- GET /profile/profile (JWT) → current user profile (sans password)
+- PUT /profile/profile (JWT) → update profile fields
+- GET /profile/profile/completeness (JWT) → { isComplete, missingFields, completionPercentage }
 
-The verification token is still returned in the API response for dev convenience; remove it in production.
+Payments
+- POST /payments/checkout-session (JWT) → { id, url } Stripe Checkout
+
+Uploads
+- POST /uploads/upload (JWT, multipart field: files[]) → save to user folder
+- GET /uploads/files (JWT) → list user files
+
+Meetups
+- POST /meetups (JWT) { targetUserId,start,end,title?,description? } → create event
+- GET /meetups (JWT) → list my events
+- GET /meetups/:id (JWT, participant or admin) → get event
+- PATCH /meetups/:id (JWT, participant or admin) → update status/details
+
+WebSocket
+- Connect: ws://localhost:4000/ws (or wss with TLS)
+- Optional auth: append `?token=<JWT>` to identify user
+- Messages: {type:'ping'} → {type:'pong'}, {type:'consult_request', symptom}
+
+## Data storage
+Temporary JSON files under `backend/data/`:
+- providers/providers.json
+- consumers/consumers.json, consumers/verifications.json
+- events/<uuid>.json
+- uploads/<email>/*
+Seeding: first run seeds sample providers with basic AI agent metadata.
+
+## Google OAuth
+Integrated via Passport Google OAuth 2.0.
+- Frontend button at login uses VITE_API_URL + `/auth/google`.
+- On success, backend issues JWT and redirects to `${CLIENT_URL}/auth/callback?token=...&role=...&name=...`.
+- New Google users are auto‑created as consumers (email verified). Providers can still self‑register.
+See `GOOGLE_OAUTH_SETUP.md` for detailed setup.
+
+## Frontend routes & components (quick map)
+- `/login` LoginForm + GoogleAuthButton
+- `/adminLogin` AdminLogin
+- `/` Dashboard (protected)
+- `/signup` ConsumerRegistration
+- `/signup/provider` ProviderRegistration
+- `/auth/callback` AuthCallback (Google redirect handler + profile completeness check)
+- `/profile/complete` ProfileCompletion (guided form)
+- `/meetups` Meetups (list + create with selected user)
+- `/pricing` Pricing (links to Stripe Checkout)
+- Shared: SideNav, PageHeader, ProviderCard, Consultation, EmailVerify, ErrorBoundary
+
+## Testing (Playwright)
+Prereqs: backend on :4000 and frontend on :5173.
+- Install: from `frontend/` or repo root devDeps: `@playwright/test` (already in frontend/package.json)
+- Run tests:
+  - cd tests
+  - npx playwright test
+
+## Email (verification) setup
+Option A — Local dev (MailDev/MailHog): keep defaults from `.env.example` (SMTP_HOST=localhost, PORT=1025). Emails appear in the tool UI.
+Option B — Gmail: set SMTP_HOST=smtp.gmail.com, SMTP_PORT=465, SMTP_SECURE=true and use an App Password. Configure EMAIL_FROM.
+
+## Notes & troubleshooting
+- 401 token errors return a redirect hint; the frontend interceptor clears auth and navigates to /login.
+- If GOOGLE_CLIENT_ID/SECRET are missing, backend will log and exit early; copy `.env.example` and fill them or remove Google from your flow.
+- Set CLIENT_URL to your frontend origin to enable proper OAuth redirects and CORS.
+
+## Roadmap
+- Replace JSON files with a database.
+- Provider availability + smarter matchmaking.
+- Harden sessions/cookies for production (secure cookies when behind HTTPS).
+- Accessibility passes and richer validations.
 
