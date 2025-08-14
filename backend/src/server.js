@@ -18,6 +18,7 @@ import profileRouter from './routes/profile.js';
 import { initMatchmaking } from './ws/matchmaking.js';
 import { verifyTokenMiddleware } from './utils/auth.js';
 import { seedProviders } from './services/seedProviders.js';
+import { connectDB, collections } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,6 +53,12 @@ process.on('uncaughtException', (err)=>{
   console.error('[UNCAUGHT_EXCEPTION]', err);
 });
 
+// Connect to DB first
+await connectDB().catch(err => {
+  console.error('[BOOT] Failed to connect to MongoDB:', err.message);
+  process.exit(1);
+});
+
 const app = express();
 app.use(cors({ origin: process.env.CLIENT_URL || '*'}));
 app.use(express.json());
@@ -78,12 +85,20 @@ app.use('/payments', verifyTokenMiddleware, paymentRouter);
 app.use('/uploads', uploadsRouter);
 app.use('/meetups', meetupsRouter);
 
-// simple temp storage
-if(!fs.existsSync(path.join(__dirname,'..','data'))){
-  fs.mkdirSync(path.join(__dirname,'..','data'),{recursive:true});
+// legacy data folder no longer used; all data stored in MongoDB
+// seed initial AI providers once (into DB). Keep legacy file seed for back-compat if present.
+async function ensureSeedProviders() {
+  const { providers } = collections();
+  const count = await providers.estimatedDocumentCount();
+  if (count === 0) {
+    try {
+      await seedProviders();
+    } catch (e) {
+      console.warn('[SEED] Seed via file failed or none; consider DB seeding separately. Reason:', e.message);
+    }
+  }
 }
-// seed initial AI providers once
-seedProviders();
+ensureSeedProviders().catch(()=>{});
 
 const port = process.env.PORT || 4000;
 const useTLS = process.env.TLS_KEY && process.env.TLS_CERT;

@@ -1,36 +1,16 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { verifyTokenMiddleware } from '../utils/auth.js';
+import { getBucket, collections } from '../db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const router = express.Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Create user-specific folder based on email
-    const userEmail = req.user?.email || 'anonymous';
-    const userFolder = path.join(__dirname, '../../data/uploads', userEmail);
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(userFolder)) {
-      fs.mkdirSync(userFolder, { recursive: true });
-    }
-    
-    cb(null, userFolder);
-  },
-  filename: (req, file, cb) => {
-    // Generate unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const extension = path.extname(file.originalname);
-    const baseName = path.basename(file.originalname, extension);
-    cb(null, `${baseName}-${uniqueSuffix}${extension}`);
-  }
-});
+// Configure multer to buffer files in memory before piping to GridFS
+const storage = multer.memoryStorage();
 
 // File filter to allow common file types
 const fileFilter = (req, file, cb) => {
@@ -61,26 +41,26 @@ const upload = multer({
 });
 
 // Upload endpoint - requires authentication
-router.post('/upload', verifyTokenMiddleware, upload.array('files', 10), (req, res) => {
+router.post('/upload', verifyTokenMiddleware, upload.array('files', 10), async (req, res) => {
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
+    const bucket = getBucket();
+    const metaCol = collections().consumers; // we'll store file refs per user in their document
+    const email = req.user.email;
 
-    const uploadedFiles = req.files.map(file => ({
-      originalName: file.originalname,
-      filename: file.filename,
-      size: file.size,
-      mimetype: file.mimetype,
-      path: file.path,
-      uploadDate: new Date().toISOString()
-    }));
+    const results = [];
+    for (const file of req.files) {
+      const filename = `${Date.now()}-${Math.round(Math.random()*1e9)}-${file.originalname}`;
+      const uploadStream = bucket.openUploadStream(filename, { contentType: file.mimetype, metadata: { email } });
+      await new Promise((resolve, reject) => {
+        uploadStream.end(file.buffer, err => err ? reject(err) : resolve());
+      });
+      results.push({ filename, size: file.size, mimetype: file.mimetype });
+    }
 
-    res.json({
-      message: 'Files uploaded successfully',
-      files: uploadedFiles,
-      userEmail: req.user.email
-    });
+    res.json({ message: 'Files uploaded successfully', files: results, userEmail: email });
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Upload failed' });
@@ -88,30 +68,32 @@ router.post('/upload', verifyTokenMiddleware, upload.array('files', 10), (req, r
 });
 
 // Get user's uploaded files
-router.get('/files', verifyTokenMiddleware, (req, res) => {
+router.get('/files', verifyTokenMiddleware, async (req, res) => {
   try {
-    const userEmail = req.user.email;
-    const userFolder = path.join(__dirname, '../../data/uploads', userEmail);
-    
-    if (!fs.existsSync(userFolder)) {
-      return res.json({ files: [] });
-    }
-    
-    const files = fs.readdirSync(userFolder).map(filename => {
-      const filePath = path.join(userFolder, filename);
-      const stats = fs.statSync(filePath);
-      return {
-        filename,
-        size: stats.size,
-        uploadDate: stats.birthtime.toISOString(),
-        path: filePath
-      };
-    });
-    
-    res.json({ files });
+    const email = req.user.email;
+    const bucket = getBucket();
+    const cursor = bucket.find({ 'metadata.email': email });
+    const files = await cursor.toArray();
+    const list = files.map(f => ({ filename: f.filename, size: f.length, uploadDate: f.uploadDate, id: f._id }));
+    res.json({ files: list });
   } catch (error) {
     console.error('Error fetching files:', error);
     res.status(500).json({ error: 'Failed to fetch files' });
+  }
+});
+
+// Download a file by filename
+router.get('/files/:filename', verifyTokenMiddleware, async (req, res) => {
+  try {
+    const bucket = getBucket();
+    const filename = req.params.filename;
+    const file = await bucket.find({ filename, 'metadata.email': req.user.email }).next();
+    if (!file) return res.status(404).json({ error: 'File not found' });
+    res.setHeader('Content-Type', file.contentType || 'application/octet-stream');
+    bucket.openDownloadStreamByName(filename).pipe(res);
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({ error: 'Failed to download file' });
   }
 });
 

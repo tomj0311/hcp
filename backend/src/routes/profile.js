@@ -1,26 +1,9 @@
 import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { collections } from '../db.js';
 import { body, validationResult } from 'express-validator';
 import { verifyTokenMiddleware } from '../utils/auth.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dataDir = path.join(__dirname, '..', '..', 'data');
-const consumersDir = path.join(dataDir, 'consumers');
-const providersDir = path.join(dataDir, 'providers');
-const consumersFile = path.join(consumersDir, 'consumers.json');
-const providersFile = path.join(providersDir, 'providers.json');
-
-function read(file) {
-  if (!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file));
-}
-
-function write(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
+// Switch to MongoDB models
 
 function normEmail(e) {
   return (e || '').trim().toLowerCase();
@@ -29,19 +12,19 @@ function normEmail(e) {
 const router = Router();
 
 // Get user profile
-router.get('/profile', verifyTokenMiddleware, (req, res) => {
+router.get('/profile', verifyTokenMiddleware, async (req, res) => {
   const { role, id } = req.user;
   
-  let users = [];
+  let user;
   if (role === 'consumer') {
-    users = read(consumersFile);
+  const { consumers } = collections();
+  user = await consumers.findOne({ id }, { projection: { _id:0 } });
   } else if (role === 'provider') {
-    users = read(providersFile);
+  const { providers } = collections();
+  user = await providers.findOne({ id }, { projection: { _id:0 } });
   } else {
     return res.status(400).json({ error: 'Invalid role' });
   }
-  
-  const user = users.find(u => u.id === id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
@@ -66,61 +49,60 @@ router.put('/profile', verifyTokenMiddleware, [
   body('organization').optional().isLength({ max: 120 }),
   body('specialization').optional().isLength({ max: 120 }),
   body('bio').optional().isLength({ max: 1000 })
-], (req, res) => {
+], async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
   
   const { role, id } = req.user;
-  let users = [];
-  let filePath = '';
-  
+  let user;
+  const cols = collections();
   if (role === 'consumer') {
-    users = read(consumersFile);
-    filePath = consumersFile;
+    user = await cols.consumers.findOne({ id });
   } else if (role === 'provider') {
-    users = read(providersFile);
-    filePath = providersFile;
+    user = await cols.providers.findOne({ id });
   } else {
     return res.status(400).json({ error: 'Invalid role' });
   }
-  
-  const userIndex = users.findIndex(u => u.id === id);
-  if (userIndex === -1) {
+  if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }
   
   // Update user data
-  const updatedUser = { ...users[userIndex], ...req.body };
+  const update = { ...req.body };
   
   // Update name if firstName or lastName changed
   if (req.body.firstName || req.body.lastName) {
-    updatedUser.name = `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim();
+    const firstName = update.firstName ?? user.firstName;
+    const lastName = update.lastName ?? user.lastName;
+    update.name = `${firstName || ''} ${lastName || ''}`.trim();
+  }
+  if (role === 'consumer') {
+    await cols.consumers.updateOne({ id }, { $set: update });
+    user = await cols.consumers.findOne({ id });
+  } else {
+    await cols.providers.updateOne({ id }, { $set: update });
+    user = await cols.providers.findOne({ id });
   }
   
-  users[userIndex] = updatedUser;
-  write(filePath, users);
-  
   // Remove sensitive data before responding
-  const { password, ...safeUser } = updatedUser;
+  const { password, ...safeUser } = user;
   res.json(safeUser);
 });
 
 // Check if profile is complete
-router.get('/profile/completeness', verifyTokenMiddleware, (req, res) => {
+router.get('/profile/completeness', verifyTokenMiddleware, async (req, res) => {
   const { role, id } = req.user;
   
-  let users = [];
+  let user;
   if (role === 'consumer') {
-    users = read(consumersFile);
+  user = await collections().consumers.findOne({ id });
   } else if (role === 'provider') {
-    users = read(providersFile);
+  user = await collections().providers.findOne({ id });
   } else {
     return res.status(400).json({ error: 'Invalid role' });
   }
-  
-  const user = users.find(u => u.id === id);
   if (!user) {
     return res.status(404).json({ error: 'User not found' });
   }

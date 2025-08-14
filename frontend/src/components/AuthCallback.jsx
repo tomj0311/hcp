@@ -78,7 +78,7 @@ export default function AuthCallback({ onLogin }) {
           p: 4, 
           textAlign: 'center', 
           maxWidth: 400,
-          borderRadius: 2
+          borderRadius: (theme) => theme.shape.borderRadius
         }}
       >
         {isSuccess ? (

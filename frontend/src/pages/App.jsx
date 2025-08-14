@@ -84,7 +84,7 @@ export default function App(){
           // Keep fully transparent background (no solid fill)
           ml: showNav && !isMobile? `${drawerWidth}px`:0,
           width: showNav && !isMobile? `calc(100% - ${drawerWidth}px)`:'100%',
-          borderRadius: 0,
+          borderRadius: 0, // This is intentionally 0 for full-width app bar
           zIndex: theme.zIndex.drawer + 2,
           backdropFilter: 'saturate(180%) blur(8px)'
         }}

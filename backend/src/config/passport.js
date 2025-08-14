@@ -1,8 +1,6 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { collections } from '../db.js';
 import { v4 as uuid } from 'uuid';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
@@ -25,27 +23,7 @@ if (!process.env.GOOGLE_CLIENT_SECRET) {
   console.error('Please check your .env file');
 }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dataDir = path.join(__dirname, '..', '..', 'data');
-const consumersDir = path.join(dataDir, 'consumers');
-const providersDir = path.join(dataDir, 'providers');
-
-// Ensure directories exist
-if (!fs.existsSync(consumersDir)) fs.mkdirSync(consumersDir, { recursive: true });
-if (!fs.existsSync(providersDir)) fs.mkdirSync(providersDir, { recursive: true });
-
-const consumersFile = path.join(consumersDir, 'consumers.json');
-const providersFile = path.join(providersDir, 'providers.json');
-
-function read(file) {
-  if (!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file));
-}
-
-function write(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
+// Switch to MongoDB models
 
 function normEmail(e) {
   return (e || '').trim().toLowerCase();
@@ -57,18 +35,19 @@ passport.serializeUser((user, done) => {
 });
 
 // Deserialize user from session
-passport.deserializeUser((sessionUser, done) => {
-  const consumers = read(consumersFile);
-  const providers = read(providersFile);
-  
-  let user = null;
-  if (sessionUser.role === 'consumer') {
-    user = consumers.find(c => c.id === sessionUser.id);
-  } else if (sessionUser.role === 'provider') {
-    user = providers.find(p => p.id === sessionUser.id);
+passport.deserializeUser(async (sessionUser, done) => {
+  try {
+    const cols = collections();
+    let user = null;
+    if (sessionUser.role === 'consumer') {
+      user = await cols.consumers.findOne({ id: sessionUser.id });
+    } else if (sessionUser.role === 'provider') {
+      user = await cols.providers.findOne({ id: sessionUser.id });
+    }
+    done(null, user);
+  } catch (e) {
+    done(e);
   }
-  
-  done(null, user);
 });
 
 // Google OAuth Strategy
@@ -103,25 +82,23 @@ passport.use(new GoogleStrategy({
     const googleId = profile.id;
 
     // Check if user already exists (in either consumers or providers)
-    const consumers = read(consumersFile);
-    const providers = read(providersFile);
-    
-    let existingUser = consumers.find(c => normEmail(c.email) === email || c.googleId === googleId);
+    const cols = collections();
+  let existingUser = await cols.consumers.findOne({ $or: [ { email }, { emailOriginal: profile.emails[0].value }, { googleId } ] });
     if (existingUser) {
       // Update Google ID if not set
       if (!existingUser.googleId) {
+        await cols.consumers.updateOne({ id: existingUser.id }, { $set: { googleId } });
         existingUser.googleId = googleId;
-        write(consumersFile, consumers);
       }
       return done(null, existingUser);
     }
     
-    existingUser = providers.find(p => normEmail(p.email) === email || p.googleId === googleId);
+  existingUser = await cols.providers.findOne({ $or: [ { email }, { emailOriginal: profile.emails[0].value }, { googleId } ] });
     if (existingUser) {
       // Update Google ID if not set
       if (!existingUser.googleId) {
+        await cols.providers.updateOne({ id: existingUser.id }, { $set: { googleId } });
         existingUser.googleId = googleId;
-        write(providersFile, providers);
       }
       return done(null, existingUser);
     }
@@ -143,9 +120,7 @@ passport.use(new GoogleStrategy({
       // Generate a random password for potential future use
       password: await bcrypt.hash(uuid(), 10)
     };
-
-    consumers.push(newConsumer);
-    write(consumersFile, consumers);
+    await cols.consumers.insertOne(newConsumer);
 
     return done(null, newConsumer);
   } catch (error) {

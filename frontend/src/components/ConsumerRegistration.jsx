@@ -30,7 +30,7 @@ export default function ConsumerRegistration({ admin=false, token }){
     finally { setLoading(false); }
   };
   return (
-  <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:5}, maxWidth:900, width:'100%', mx:'auto', mt:{xs:2, sm:4}, borderRadius:(t)=> t.custom?.radii?.card || 4, boxShadow:(t)=> t.palette.mode==='dark'? '0 10px 40px -12px rgba(0,0,0,0.65)':'0 12px 42px -14px rgba(30,50,70,0.18)'}}>
+  <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:5}, maxWidth:900, width:'100%', mx:'auto', mt:{xs:2, sm:4}, boxShadow:(t)=> t.palette.mode==='dark'? '0 10px 40px -12px rgba(0,0,0,0.65)':'0 12px 42px -14px rgba(30,50,70,0.18)'}}>
       <Typography variant="h4" sx={{fontWeight:700, mb:1, fontSize:{xs:'1.7rem', sm:'2rem'}}}>{admin? 'Create Consumer':'Sign Up'}</Typography>
       <Typography variant="body2" sx={{mb:3, opacity:0.8}}>Create your consumer account to start requesting consultations.</Typography>
       {status && <Alert severity={status.toLowerCase().includes('fail')? 'error':'info'} sx={{mb:3}}>{status}</Alert>}

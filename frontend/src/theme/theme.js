@@ -23,7 +23,7 @@ export const getDesignTokens = (mode) => ({
     }
   },
   // Keep base shape radius smaller and define custom token for cards
-  shape: { borderRadius: 8 },
+  shape: { borderRadius: 4 },
   spacing: 8,
   typography: {
     fontFamily: 'Roboto, Arial, sans-serif',
@@ -69,7 +69,13 @@ export const getDesignTokens = (mode) => ({
         }),
         '::-webkit-scrollbar': { width: 10 },
         '::-webkit-scrollbar-track': { background: 'transparent' },
-        '::-webkit-scrollbar-thumb': ({ theme }) => ({ background: '#2a2a2a', borderRadius: 8, border: '2px solid #121212' }),
+  '::-webkit-scrollbar-thumb': ({ theme }) => ({ background: '#2a2a2a', borderRadius: theme.shape.borderRadius, border: '2px solid #121212' }),
+      }
+    },
+    MuiSnackbar: {
+      // Ensure all Snackbars appear in the top-right by default
+      defaultProps: {
+        anchorOrigin: { vertical: 'top', horizontal: 'right' }
       }
     },
     MuiContainer: {
@@ -80,7 +86,7 @@ export const getDesignTokens = (mode) => ({
         root: ({ theme }) => ({
           backgroundImage: 'none',
           // Unified card/container radius
-          borderRadius: theme.custom?.radii?.card || 8,
+          borderRadius: theme.shape.borderRadius,
           transition: 'background-color .25s ease, box-shadow .25s ease, border-color .25s ease',
           border: theme.palette.mode==='dark'? '1px solid #262626':'1px solid #e5e8ef',
           backgroundColor: theme.palette.mode==='dark' ? '#1b1b1b' : '#ffffff',
@@ -90,24 +96,24 @@ export const getDesignTokens = (mode) => ({
     MuiCard: {
       styleOverrides: {
         root: ({ theme }) => ({
-          borderRadius: theme.custom?.radii?.card || 8,
+          borderRadius: theme.shape.borderRadius,
         })
       }
     },
     MuiTextField: {
       styleOverrides: {
-        root: {
+        root: ({ theme }) => ({
           '& .MuiOutlinedInput-root': {
-            borderRadius: 8,
+            borderRadius: theme.shape.borderRadius,
           }
-        }
+        })
       }
     },
     MuiAlert: {
       styleOverrides: {
-        root: {
-          borderRadius: 8,
-        }
+        root: ({ theme }) => ({
+          borderRadius: theme.shape.borderRadius,
+        })
       }
     },
     MuiChip: {
@@ -136,15 +142,15 @@ export const getDesignTokens = (mode) => ({
     },
     MuiListItemButton: {
       styleOverrides: {
-        root: {
-          borderRadius: 8
-        }
+        root: ({ theme }) => ({
+          borderRadius: theme.shape.borderRadius
+        })
       }
     }
   },
   custom: {
     // Use the same radius as shape.borderRadius for consistency
-    radii: { card: 8 },
+    radii: { card: 4 },
     tiles: {
       image: {
         bg: 'linear-gradient(135deg,#0582ff 0%,#3fa9ff 60%,#7fc8ff 100%)',

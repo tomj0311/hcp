@@ -1,7 +1,5 @@
 import { Router } from 'express';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { collections } from '../db.js';
 import { body, validationResult } from 'express-validator';
 import bcrypt from 'bcrypt';
 import { v4 as uuid } from 'uuid';
@@ -9,25 +7,7 @@ import { sendRegistrationEmail } from '../services/emailService.js';
 import crypto from 'crypto';
 import { verifyTokenMiddleware } from '../utils/auth.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dataDir = path.join(__dirname,'..','..','data');
-// New generic data layout (providers & consumers stored in separate sub-folders)
-const providersDir = path.join(dataDir,'providers');
-const consumersDir = path.join(dataDir,'consumers');
-if(!fs.existsSync(providersDir)) fs.mkdirSync(providersDir,{recursive:true});
-if(!fs.existsSync(consumersDir)) fs.mkdirSync(consumersDir,{recursive:true});
-const providersFile = path.join(providersDir,'providers.json');
-const consumersFile = path.join(consumersDir,'consumers.json');
-const consumerVerificationFile = path.join(consumersDir,'verifications.json');
-
-function read(file){
-  if(!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file));
-}
-function write(file,data){
-  fs.writeFileSync(file, JSON.stringify(data,null,2));
-}
+// Switch to MongoDB models
 
 // Helper: normalize email consistently (trim + lowercase)
 function normEmail(e){
@@ -35,20 +15,26 @@ function normEmail(e){
 }
 
 // Helper: case-insensitive cross-collection duplicate check
-function emailExists(email){
+async function emailExists(email){
   const target = normEmail(email);
-  const providers = read(providersFile);
-  const consumers = read(consumersFile);
-  return providers.some(p=> normEmail(p.email) === target) || consumers.some(c=> normEmail(c.email) === target);
+  const { providers, consumers } = collections();
+  const [p,c] = await Promise.all([
+    providers.findOne({ email: target }),
+    consumers.findOne({ email: target })
+  ]);
+  return !!(p || c);
 }
 
 // Optional phone duplicate check (across both roles). Only rejects if an existing record has identical phone string (after trim) and phone provided in request.
-function phoneExists(phone){
+async function phoneExists(phone){
   if(!phone) return false;
-  const target = phone.trim();
-  const providers = read(providersFile);
-  const consumers = read(consumersFile);
-  return providers.some(p=> (p.phone||'').trim() === target) || consumers.some(c=> (c.phone||'').trim() === target);
+  const target = (phone||'').trim();
+  const { providers, consumers } = collections();
+  const [p,c] = await Promise.all([
+    providers.findOne({ phone: target }),
+    consumers.findOne({ phone: target })
+  ]);
+  return !!(p || c);
 }
 
 const router = Router();
@@ -72,52 +58,46 @@ router.post('/consumers',[
 ], async (req,res)=>{
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
-
-  const consumers = read(consumersFile);
+  
   // Cross-role, case-insensitive email duplicate prevention
-  if(emailExists(req.body.email)){
+  if(await emailExists(req.body.email)){
     return res.status(400).json({message:'Email already registered. Please log in or use a different email.'});
   }
   // Phone duplicate (optional)
-  if(phoneExists(req.body.phone)){
+  if(await phoneExists(req.body.phone)){
     return res.status(400).json({message:'Phone number already associated with an existing account.'});
   }
 
-  const verificationTokens = read(consumerVerificationFile);
   const { password, confirmPassword, firstName, lastName, email, ...rest } = req.body;
   const hash = await bcrypt.hash(password, 10);
+  const { consumers, verificationTokens } = collections();
   const consumer = { id: uuid(), role:'consumer', active:false, password: hash, createdAt: Date.now(), firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest, email: normEmail(email), emailOriginal: email };
-  consumers.push(consumer);
-  write(consumersFile, consumers);
+  await consumers.insertOne(consumer);
   const token = uuid();
-  verificationTokens.push({ token, consumerId: consumer.id, createdAt: Date.now() });
-  write(consumerVerificationFile, verificationTokens);
+  await verificationTokens.insertOne({ token, consumerId: consumer.id, createdAt: new Date() });
   // Send email with verification token (so user can click link or copy code)
   sendRegistrationEmail(consumer.email, 'consumer', token).catch(()=>{});
   res.status(201).json({ id: consumer.id, verifyToken: token });
 });
 
-router.post('/consumers/verify',[body('token').notEmpty()], (req,res)=>{
+router.post('/consumers/verify',[body('token').notEmpty()], async (req,res)=>{
   const { token } = req.body;
-  const consumers = read(consumersFile);
-  const verificationTokens = read(consumerVerificationFile);
-  const record = verificationTokens.find(v=> v.token === token);
+  const { consumers, verificationTokens } = collections();
+  const record = await verificationTokens.findOne({ token });
   if(!record) return res.status(400).json({error:'invalid token'});
-  const consumer = consumers.find(p=> p.id === record.consumerId);
+  const consumer = await consumers.findOne({ id: record.consumerId });
   if(!consumer) return res.status(400).json({error:'consumer not found'});
-  consumer.active = true;
-  write(consumersFile, consumers);
-  const remaining = verificationTokens.filter(v=> v.token !== token);
-  write(consumerVerificationFile, remaining);
+  await consumers.updateOne({ id: consumer.id }, { $set: { active: true } });
+  await verificationTokens.deleteOne({ token });
   res.json({status:'verified'});
 });
 
 router.post('/consumers/login',[body('email').isEmail(), body('password').notEmpty()], async (req,res)=>{
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
-  const consumers = read(consumersFile);
   const target = normEmail(req.body.email);
-  const consumer = consumers.find(p=> normEmail(p.email) === target || normEmail(p.emailOriginal) === target);
+  const { consumers } = collections();
+  const consumer = await consumers.findOne({ $or: [ { email: target }, { emailOriginal: target } ] });
   if(!consumer) return res.status(401).json({error:'invalid credentials'});
   if(!consumer.active) return res.status(403).json({error:'not verified'});
   const ok = await bcrypt.compare(req.body.password, consumer.password);
@@ -127,8 +107,10 @@ router.post('/consumers/login',[body('email').isEmail(), body('password').notEmp
 
 // ---------------- Protected routes ----------------
 // ---------------- Provider (formerly doctor) public registration + listing ----------------
-router.get('/providers', verifyTokenMiddleware, (req,res)=>{
-  res.json(read(providersFile));
+router.get('/providers', verifyTokenMiddleware, async (req,res)=>{
+  const { providers } = collections();
+  const list = await providers.find({}, { projection: { _id:0, password:0 } }).sort({ rank: -1 }).toArray();
+  res.json(list);
 });
 
 // Providers can self-register (public) with password (to allow login) or we can auto-generate one if omitted
@@ -151,9 +133,8 @@ router.post('/providers', [
 ], async (req,res)=>{
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
-  const providers = read(providersFile);
-  if(emailExists(req.body.email)) return res.status(400).json({message:'Email already registered.'});
-  if(phoneExists(req.body.phone)) return res.status(400).json({message:'Phone number already associated with an existing account.'});
+  if(await emailExists(req.body.email)) return res.status(400).json({message:'Email already registered.'});
+  if(await phoneExists(req.body.phone)) return res.status(400).json({message:'Phone number already associated with an existing account.'});
   let { password, confirmPassword, firstName, lastName, email, ...rest } = req.body;
   let generated = false;
   if(!password){
@@ -161,16 +142,18 @@ router.post('/providers', [
     generated = true;
   }
   const hash = await bcrypt.hash(password,10);
+  const { providers } = collections();
   const provider = { id: uuid(), role:'provider', active:true, password: hash, rank: Math.floor(Math.random()*100), aiAgent: rest.aiAgent || null, createdAt: Date.now(), firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest, email: normEmail(email), emailOriginal: email };
-  providers.push(provider);
-  write(providersFile, providers);
+  await providers.insertOne(provider);
   sendRegistrationEmail(provider.email, 'provider').catch(()=>{});
   const { password: _pw, ...sanitized } = provider;
   res.status(201).json({ ...sanitized, tempPassword: generated ? password : undefined });
 });
 
-router.get('/consumers', verifyTokenMiddleware, (req,res)=>{
-  res.json(read(consumersFile));
+router.get('/consumers', verifyTokenMiddleware, async (req,res)=>{
+  const { consumers } = collections();
+  const list = await consumers.find({}, { projection: { _id:0, password:0 } }).toArray();
+  res.json(list);
 });
 
 // Admin-only: create & activate patient directly (no email verification step)
@@ -191,11 +174,10 @@ router.post('/consumers/admin', verifyTokenMiddleware, [
   const errors = validationResult(req);
   if(!errors.isEmpty()) return res.status(400).json({errors:errors.array()});
 
-  const consumers = read(consumersFile);
-  if(emailExists(req.body.email)){
+  if(await emailExists(req.body.email)){
     return res.status(400).json({message:'Email already registered.'});
   }
-  if(phoneExists(req.body.phone)){
+  if(await phoneExists(req.body.phone)){
     return res.status(400).json({message:'Phone number already associated with an existing account.'});
   }
 
@@ -206,9 +188,9 @@ router.post('/consumers/admin', verifyTokenMiddleware, [
     generated = true;
   }
   const hash = await bcrypt.hash(password,10);
+  const { consumers } = collections();
   const consumer = { id: uuid(), role:'consumer', active:true, password: hash, firstName, lastName, name: `${firstName} ${lastName}`.trim(), ...rest, email: normEmail(email), emailOriginal: email };
-  consumers.push(consumer);
-  write(consumersFile, consumers);
+  await consumers.insertOne(consumer);
   sendRegistrationEmail(consumer.email, 'consumer').catch(()=>{});
   const { password: _pw, ...sanitized } = consumer;
   res.status(201).json({ ...sanitized, tempPassword: generated ? password : undefined });

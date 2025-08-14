@@ -1,26 +1,11 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { generateToken } from '../utils/auth.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { collections } from '../db.js';
 import bcrypt from 'bcrypt';
 import passport from '../config/passport.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const dataDir = path.join(__dirname,'..','..','data');
-// Updated generic consumer store
-const consumersDir = path.join(dataDir,'consumers');
-const providersDir = path.join(dataDir,'providers');
-if(!fs.existsSync(consumersDir)) fs.mkdirSync(consumersDir,{recursive:true});
-if(!fs.existsSync(providersDir)) fs.mkdirSync(providersDir,{recursive:true});
-const consumersFile = path.join(consumersDir,'consumers.json');
-const providersFile = path.join(providersDir,'providers.json');
-function read(file){
-  if(!fs.existsSync(file)) return [];
-  return JSON.parse(fs.readFileSync(file));
-}
+// Switch to MongoDB models
 
 function normEmail(e){
   return (e||'').trim().toLowerCase();
@@ -42,8 +27,8 @@ router.post('/login', [body('username').notEmpty(), body('password').notEmpty()]
     return res.json({ token, role:'admin' });
   }
   // consumer login
-  const consumers = read(consumersFile);
-  const consumer = consumers.find(p=> normEmail(p.email) === normalized || normEmail(p.emailOriginal) === normalized);
+  const { consumers, providers } = collections();
+  const consumer = await consumers.findOne({ $or: [ { email: normalized }, { emailOriginal: normalized } ] });
   if(consumer && consumer.active){
     const ok = await bcrypt.compare(password, consumer.password);
     if(ok){
@@ -52,8 +37,7 @@ router.post('/login', [body('username').notEmpty(), body('password').notEmpty()]
     }
   }
   // provider login
-  const providers = read(providersFile);
-  const provider = providers.find(p=> normEmail(p.email) === normalized || normEmail(p.emailOriginal) === normalized);
+  const provider = await providers.findOne({ $or: [ { email: normalized }, { emailOriginal: normalized } ] });
   if(provider && provider.active){
     const ok = await bcrypt.compare(password, provider.password);
     if(ok){

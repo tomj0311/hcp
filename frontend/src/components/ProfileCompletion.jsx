@@ -117,7 +117,7 @@ export default function ProfileCompletion({ auth, onProfileUpdate }) {
             <LinearProgress 
               variant="determinate" 
               value={completeness.completionPercentage} 
-              sx={{ height: 8, borderRadius: 4 }}
+              sx={(theme) => ({ height: 8, borderRadius: theme.shape.borderRadius })}
             />
           </Box>
 

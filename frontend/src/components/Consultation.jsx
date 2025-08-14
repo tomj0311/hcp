@@ -505,7 +505,7 @@ export default function Consultation(){
           mb={{ xs: 1.5, sm: 2 }}
         />
         {meetupId && (
-          <Box component="div" sx={(theme) => ({ ml: { xs: 0, sm: 7 }, mb: 1, fontSize: { xs: '0.75rem', sm: '0.8rem' }, px: 1, py: 0.5, borderRadius: theme.shape.borderRadius / 2, bgcolor: 'action.hover', alignSelf: 'flex-start' })}>
+          <Box component="div" sx={(theme) => ({ ml: { xs: 0, sm: 7 }, mb: 1, fontSize: { xs: '0.75rem', sm: '0.8rem' }, px: 1, py: 0.5, borderRadius: theme.shape.borderRadius, bgcolor: 'action.hover', alignSelf: 'flex-start' })}>
             {meetupError ? `Meetup: ${meetupError}` : (meetup ? `Meetup ${new Date(meetup.start).toLocaleString()}` : 'Loading meetup...')}
           </Box>
         )}
@@ -617,7 +617,7 @@ export default function Consultation(){
           pr:{ xs:0.5, sm:1 },
           scrollbarWidth:'thin',
           '&::-webkit-scrollbar': { width: 8 },
-          '&::-webkit-scrollbar-thumb': (theme)=> ({ backgroundColor: theme.palette.action.disabled, borderRadius: theme.shape.borderRadius / 2 })
+          '&::-webkit-scrollbar-thumb': (theme)=> ({ backgroundColor: theme.palette.action.disabled, borderRadius: theme.shape.borderRadius })
         }} aria-label="conversation area">
           {channel==='voice' && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -663,7 +663,7 @@ export default function Consultation(){
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                borderRadius: `${theme.shape.borderRadius}px`,
+                borderRadius: theme.shape.borderRadius,
                 minHeight: { xs: 240, sm: 340, md: 400 },
                 background: theme.palette.mode==='dark'
                   ? `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 65%)`
@@ -838,7 +838,7 @@ export default function Consultation(){
                 </Stack>
                 {uploading && (
                   <Box sx={{ mt: 2 }}>
-                    <LinearProgress variant="determinate" value={uploadProgress} sx={(theme) => ({ height: 8, borderRadius: theme.shape.borderRadius / 2 })} />
+                    <LinearProgress variant="determinate" value={uploadProgress} sx={(theme) => ({ height: 8, borderRadius: theme.shape.borderRadius })} />
                     <Typography variant="body2" sx={{ fontSize: '0.9rem', mt: 1 }}>
                       Uploading files... {uploadProgress}%
                     </Typography>

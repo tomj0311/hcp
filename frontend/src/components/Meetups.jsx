@@ -207,7 +207,7 @@ export default function Meetups({ auth }){
         mb={2}
       />
       {viewMode==='month' && (
-        <Paper sx={{ p: 3, boxShadow: 3, borderRadius: 2 }}>
+  <Paper sx={{ p: 3, boxShadow: 3 }}>
           <Typography variant="subtitle2" sx={{mb:2}}>{month.format('MMMM YYYY')}</Typography>
           <Box sx={{display:'grid', gridTemplateColumns:'repeat(7, 1fr)', gap:0.5}}>
             {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=> <Box key={d} sx={{fontSize:12, fontWeight:600, textAlign:'center', opacity:0.7}}>{d}</Box>)}
@@ -250,9 +250,9 @@ export default function Meetups({ auth }){
       )}
 
       {viewMode==='week' && (
-        <Paper sx={{ p: 3, boxShadow: 3, borderRadius: 2 }}>
+        <Paper sx={{ p: 3, boxShadow: 3 }}>
           <Typography variant="subtitle2" sx={{mb:2}}>{weekStart.format('MMM D')} - {weekStart.add(6,'day').format('MMM D, YYYY')}</Typography>
-          <Box sx={{display:'grid', gridTemplateColumns:'60px repeat(7,1fr)', border: '1px solid', borderColor:'divider', height:600, position:'relative', overflow:'hidden', borderRadius:(t)=> t.custom?.radii?.card || 4}}>
+                    <Box sx={{display:'grid', gridTemplateColumns:'60px repeat(7,1fr)', border: '1px solid', borderColor:'divider', height:600, position:'relative', overflow:'hidden', borderRadius:(t)=> t.shape.borderRadius}}>
             {/* Hour labels */}
             <Box sx={{borderRight:'1px solid', borderColor:'divider', position:'relative'}}>
               {hours.map(h=> (
@@ -312,9 +312,9 @@ export default function Meetups({ auth }){
       )}
 
       {viewMode==='day' && (
-        <Paper sx={{ p: 3, boxShadow: 3, borderRadius: 2 }}>
+        <Paper sx={{ p: 3, boxShadow: 3 }}>
           <Typography variant="subtitle2" sx={{mb:2}}>{selectedDate.format('dddd, MMMM D, YYYY')}</Typography>
-          <Box sx={{display:'grid', gridTemplateColumns:'80px 1fr', border: '1px solid', borderColor:'divider', height:600, position:'relative', overflow:'hidden', borderRadius:2}}>
+          <Box sx={{display:'grid', gridTemplateColumns:'80px 1fr', border: '1px solid', borderColor:'divider', height:600, position:'relative', overflow:'hidden', borderRadius: (theme) => theme.shape.borderRadius}}>
             {/* Hour labels */}
             <Box sx={{borderRight:'1px solid', borderColor:'divider', position:'relative', bgcolor:'background.paper'}}>
               {hours.map(h=> (
@@ -519,7 +519,7 @@ export default function Meetups({ auth }){
                   </Typography>
                   <Typography
                     variant="body2"
-                    sx={(theme)=> ({ whiteSpace:'pre-wrap', bgcolor: theme.palette.background.paper, p: 1, borderRadius: 1 })}
+                    sx={(theme)=> ({ whiteSpace:'pre-wrap', bgcolor: theme.palette.background.paper, p: 1, borderRadius: theme.shape.borderRadius })}
                   >
                     {detail.description}
                   </Typography>
@@ -549,10 +549,10 @@ export default function Meetups({ auth }){
           <Button onClick={()=> setDetail(null)}>Close</Button>
         </DialogActions>
       </Dialog>
-      <Snackbar open={!!error} autoHideDuration={6000} onClose={()=> setError('')} anchorOrigin={{ vertical:'bottom', horizontal:'center'}}>
+  <Snackbar open={!!error} autoHideDuration={6000} onClose={()=> setError('')} anchorOrigin={{ vertical:'top', horizontal:'right'}}>
         <Alert severity="error" onClose={()=> setError('')} variant="filled">{error}</Alert>
       </Snackbar>
-      <Snackbar open={!!success} autoHideDuration={3000} onClose={()=> setSuccess('')} anchorOrigin={{ vertical:'bottom', horizontal:'center'}}>
+  <Snackbar open={!!success} autoHideDuration={3000} onClose={()=> setSuccess('')} anchorOrigin={{ vertical:'top', horizontal:'right'}}>
         <Alert severity="success" onClose={()=> setSuccess('')} variant="filled">{success}</Alert>
       </Snackbar>
     </Box>

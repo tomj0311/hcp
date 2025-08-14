@@ -32,7 +32,7 @@ class ErrorBoundary extends React.Component {
             </Typography>
             
             {process.env.NODE_ENV === 'development' && (
-              <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.100', borderRadius: (theme) => theme.shape.borderRadius }}>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
                   <strong>Error:</strong> {this.state.error && this.state.error.toString()}
                 </Typography>

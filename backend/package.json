@@ -4,11 +4,13 @@
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "node --watch --watch-path=./src src/server.js",
+  "dev": "node --watch --watch-path=./src src/server.js",
     "dev:nw": "node src/server.js",
-    "start": "node src/server.js"
+  "start": "node src/server.js",
+  "migrate": "node src/scripts/migrate-files-to-mongo.js"
   },
   "dependencies": {
+  "mongodb": "^6.8.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
