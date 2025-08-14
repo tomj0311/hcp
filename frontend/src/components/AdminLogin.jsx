@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TextField, Button, Paper, Typography, Stack, Link as MuiLink } from '@mui/material';
+import PageHeader from './PageHeader.jsx';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -26,7 +27,7 @@ export default function AdminLogin({ onLogin }){
 
   return (
     <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:4}, maxWidth:{xs:360, sm:420}, mx:'auto', mt:{xs:2, sm:3}, boxShadow:(theme)=> theme.palette.mode==='dark'? '0 6px 26px -10px rgba(0,0,0,0.65)':'0 6px 24px -8px rgba(0,0,0,0.08)'}} aria-label="Admin login form">
-      <Typography variant="h5" sx={{fontWeight:700, mb:3, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>Admin Sign In</Typography>
+  <PageHeader title="Admin Sign In" mb={3} />
       <Stack spacing={2}>
         <TextField label="Username" value={username} onChange={e=> setUsername(e.target.value)} fullWidth required size={window.innerWidth < 600 ? 'small':'medium'} inputProps={{'aria-label':'username'}} />
         <TextField label="Password" type="password" value={password} onChange={e=> setPassword(e.target.value)} fullWidth required size={window.innerWidth < 600 ? 'small':'medium'} inputProps={{'aria-label':'password'}} />

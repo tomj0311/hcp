@@ -5,6 +5,7 @@ import { Box, Typography, Paper, Button, Dialog, DialogTitle, DialogContent, Dia
 import { Plus as AddIcon, Video as VideoIcon } from 'lucide-react';
 import axios from 'axios';
 import dayjs from 'dayjs';
+import PageHeader from './PageHeader.jsx';
 
 // Simple month grid calendar (no external heavy calendar lib)
 function buildMonth(year, month){
@@ -173,9 +174,10 @@ export default function Meetups({ auth }){
 
   return (
     <Box>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{mb:2}}>
-        <Typography variant="h6" sx={{fontWeight:700}}>Meetups</Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
+      <PageHeader
+        title="Meetups"
+        actions={(
+          <Stack direction="row" spacing={1} alignItems="center">
           {viewMode==='month' && (
             <>
               <Button size="small" variant="outlined" onClick={()=> { setMonth(m=> m.subtract(1,'month')); setSelectedDate(d=> d.subtract(1,'month')); }}>Prev</Button>
@@ -200,8 +202,10 @@ export default function Meetups({ auth }){
           {(auth?.role==='consumer' || auth?.role==='provider') && (
             <Button size="small" startIcon={<AddIcon />} variant="contained" onClick={()=> setOpen(true)}>New</Button>
           )}
-        </Stack>
-      </Stack>
+          </Stack>
+        )}
+        mb={2}
+      />
       {viewMode==='month' && (
         <Paper sx={{ p: 3, boxShadow: 3, borderRadius: 2 }}>
           <Typography variant="subtitle2" sx={{mb:2}}>{month.format('MMMM YYYY')}</Typography>

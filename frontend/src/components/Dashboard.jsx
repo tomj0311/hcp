@@ -3,6 +3,7 @@ import { Box, Typography, Grid, Paper, Stack, IconButton, Switch, Button } from 
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw as RefreshIcon } from 'lucide-react';
 import ProviderCard from './ProviderCard.jsx';
+import PageHeader from './PageHeader.jsx';
 import axios from 'axios';
 
 export default function Dashboard({ token, onRequestConsult, mode, onToggleMode, role }){
@@ -40,14 +41,17 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
 
   return (
     <Box sx={{px:{xs:1, sm:0}}}>
-      <Stack direction={{xs:'column', sm:'row'}} justifyContent="space-between" alignItems={{xs:'flex-start', sm:'center'}} spacing={{xs:2, sm:0}} sx={{mb:3}}>
-          <Typography variant="h5" sx={{fontWeight:700, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>{role==='consumer'? 'Consumer Dashboard': role==='provider'? 'Provider Dashboard':'Admin Dashboard'}</Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Typography variant="caption" sx={{fontSize:{xs:'0.7rem', sm:'0.75rem'}}}>{mode==='dark'? 'Dark':'Light'} mode</Typography>
-          <Switch checked={mode==='dark'} onChange={onToggleMode} inputProps={{'aria-label':'toggle theme'}} size="small" />
-          <IconButton aria-label="refresh" onClick={loadProviders} size="small"><RefreshIcon /></IconButton>
-        </Stack>
-      </Stack>
+      <PageHeader
+        title={role==='consumer'? 'Consumer Dashboard': role==='provider'? 'Provider Dashboard':'Admin Dashboard'}
+        actions={(
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="caption" sx={{fontSize:{xs:'0.7rem', sm:'0.75rem'}}}>{mode==='dark'? 'Dark':'Light'} mode</Typography>
+            <Switch checked={mode==='dark'} onChange={onToggleMode} inputProps={{'aria-label':'toggle theme'}} size="small" />
+            <IconButton aria-label="refresh" onClick={loadProviders} size="small"><RefreshIcon /></IconButton>
+          </Stack>
+        )}
+        mb={{ xs: 2, sm: 3 }}
+      />
       {role==='admin' && (
         <Grid container spacing={{xs:2, sm:3}} sx={{mb:3}}>
           <Grid item xs={12} sm={6} lg={4}>

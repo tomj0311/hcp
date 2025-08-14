@@ -143,7 +143,7 @@ export const getDesignTokens = (mode) => ({
     }
   },
   custom: {
-    // Doubled card radius from 4 -> 8
+    // Use the same radius as shape.borderRadius for consistency
     radii: { card: 8 },
     tiles: {
       image: {

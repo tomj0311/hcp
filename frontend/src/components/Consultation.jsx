@@ -21,6 +21,7 @@ import {
   CardContent
 } from '@mui/material';
 import { ArrowLeft as ArrowBackIcon, Send as SendIcon, MessageCircle as ChatBubbleOutlineIcon, Mic as MicIcon, MicOff as MicOffIcon, Video as VideocamIcon, VideoOff as VideocamOffIcon, Paperclip as AttachFileIcon, UploadCloud as CloudUploadIcon, Trash2 as DeleteIcon, Settings as SettingsIcon } from 'lucide-react';
+import PageHeader from './PageHeader.jsx';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -467,7 +468,7 @@ export default function Consultation(){
             backgroundColor: (theme)=> theme.palette.mode==='dark'? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.6)',
             px: 1.5,
             py: 0.5,
-            borderRadius: 2,
+            borderRadius: (theme) => theme.shape.borderRadius,
             fontSize: '0.7rem',
             fontWeight: 500,
             pointerEvents: 'none'
@@ -485,27 +486,29 @@ export default function Consultation(){
         minHeight:0,
         // Use theme's default Paper border radius (will be 8 from theme)
       }} aria-label="consultation chat panel">
-  <Stack direction="row" spacing={{ xs:0.5, sm:1 }} alignItems="center" sx={{mb:{ xs:1.5, sm:2 }}}>
-          <Tooltip title="Back to dashboard"><IconButton aria-label="back" onClick={()=> navigate('/')} size="large"><ArrowBackIcon fontSize="large" /></IconButton></Tooltip>
-          <Typography variant="h5" sx={{fontWeight:700, fontSize:{xs:'1.2rem', sm:'1.4rem'}}}>Video Consultation</Typography>
-          <Box component="span" sx={{ml:1, opacity:0.8, fontSize:{xs:'0.9rem', sm:'1rem'}, fontWeight:500}}>{provider? `with ${provider.name}` : (loading? 'Loading...' : 'Unknown')}</Box>
-          {meetupId && (
-            <Box component="span" sx={{ml:2, fontSize:{xs:'0.65rem', sm:'0.7rem'}, px:1, py:0.5, borderRadius:1, bgcolor:'action.hover'}}>
-              {meetupError? `Meetup: ${meetupError}` : (meetup? `Meetup ${new Date(meetup.start).toLocaleString()}` : 'Loading meetup...')}
-            </Box>
+        <PageHeader
+          title="Video Consultation"
+          subtitle={provider ? `with ${provider.name}` : (loading ? 'Loading...' : 'Unknown')}
+          onBack={() => navigate('/')}
+          actions={(
+            <Tooltip title="Media settings">
+              <IconButton
+                aria-label="media settings"
+                onClick={() => setShowMediaSettings(!showMediaSettings)}
+                size="large"
+                color={showMediaSettings ? 'primary' : 'default'}
+              >
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
           )}
-          <Box sx={{flexGrow:1}} />
-          <Tooltip title="Media settings">
-            <IconButton 
-              aria-label="media settings" 
-              onClick={() => setShowMediaSettings(!showMediaSettings)} 
-              size="large"
-              color={showMediaSettings ? "primary" : "default"}
-            >
-              <SettingsIcon fontSize="large" />
-            </IconButton>
-          </Tooltip>
-        </Stack>
+          mb={{ xs: 1.5, sm: 2 }}
+        />
+        {meetupId && (
+          <Box component="div" sx={(theme) => ({ ml: { xs: 0, sm: 7 }, mb: 1, fontSize: { xs: '0.75rem', sm: '0.8rem' }, px: 1, py: 0.5, borderRadius: theme.shape.borderRadius / 2, bgcolor: 'action.hover', alignSelf: 'flex-start' })}>
+            {meetupError ? `Meetup: ${meetupError}` : (meetup ? `Meetup ${new Date(meetup.start).toLocaleString()}` : 'Loading meetup...')}
+          </Box>
+        )}
         {/* Media Settings Panel inline (pushes content, allows full growth) */}
         {showMediaSettings && (
           <Card sx={{ mb: 2, bgcolor: 'background.paper' }}>
@@ -614,7 +617,7 @@ export default function Consultation(){
           pr:{ xs:0.5, sm:1 },
           scrollbarWidth:'thin',
           '&::-webkit-scrollbar': { width: 8 },
-          '&::-webkit-scrollbar-thumb': (theme)=> ({ backgroundColor: theme.palette.action.disabled, borderRadius:4 })
+          '&::-webkit-scrollbar-thumb': (theme)=> ({ backgroundColor: theme.palette.action.disabled, borderRadius: theme.shape.borderRadius / 2 })
         }} aria-label="conversation area">
           {channel==='voice' && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -660,7 +663,7 @@ export default function Consultation(){
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                borderRadius: theme.custom?.radii?.card || 8,
+                borderRadius: `${theme.shape.borderRadius}px`,
                 minHeight: { xs: 240, sm: 340, md: 400 },
                 background: theme.palette.mode==='dark'
                   ? `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 65%)`
@@ -835,7 +838,7 @@ export default function Consultation(){
                 </Stack>
                 {uploading && (
                   <Box sx={{ mt: 2 }}>
-                    <LinearProgress variant="determinate" value={uploadProgress} sx={{ height: 8, borderRadius: 1 }} />
+                    <LinearProgress variant="determinate" value={uploadProgress} sx={(theme) => ({ height: 8, borderRadius: theme.shape.borderRadius / 2 })} />
                     <Typography variant="body2" sx={{ fontSize: '0.9rem', mt: 1 }}>
                       Uploading files... {uploadProgress}%
                     </Typography>

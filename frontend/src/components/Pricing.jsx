@@ -2,6 +2,7 @@ import React from 'react';
 import { Grid, Card, CardContent, Typography, Button, List, ListItem, ListItemIcon, ListItemText, Chip, Box } from '@mui/material';
 import { CheckCircle as CheckIcon } from 'lucide-react';
 import axios from 'axios';
+import PageHeader from './PageHeader.jsx';
 
 const tiers = [
   { title:'Freemium', price:'$0', desc:'Explore providers and basic platform access.', plan:'freemium', color:'default', features:['Browse provider directory','Basic profile','Standard response times'] },
@@ -16,7 +17,7 @@ export default function Pricing(){
   };
   return (
     <Box sx={{px:{xs:1, sm:2}}}>
-      <Typography variant="h4" sx={{fontWeight:700, mb:{xs:3, md:5}, fontSize:{xs:'1.8rem', sm:'2.125rem'}}} align="center">Pricing</Typography>
+  <PageHeader title="Pricing" mb={{ xs: 2, md: 4 }} />
       <Grid container spacing={{xs:2, sm:3, md:4}} sx={{mt:1, justifyContent:'center'}}>
         {tiers.map(t => (
           <Grid item xs={12} sm={6} md={4} key={t.title}>

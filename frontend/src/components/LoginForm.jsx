@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TextField, Button, Typography, Paper, Stack, Link as MuiLink, Divider } from '@mui/material';
+import PageHeader from './PageHeader.jsx';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import GoogleAuthButton from './GoogleAuthButton.jsx';
@@ -26,7 +27,7 @@ export default function LoginForm({ onLogin }){
 
   return (
     <Paper component="form" onSubmit={submit} sx={{p:{xs:3, sm:4}, maxWidth:{xs:360, sm:420}, mx:'auto', mt:{xs:2, sm:3}, boxShadow:(theme)=> theme.palette.mode==='dark'? '0 6px 26px -10px rgba(0,0,0,0.6)':'0 6px 24px -8px rgba(0,0,0,0.08)'}} aria-label="login form">
-  <Typography variant="h5" sx={{fontWeight:700, mb:2, fontSize:{xs:'1.25rem', sm:'1.5rem'}}}>Sign In</Typography>
+  <PageHeader title="Sign In" mb={2} />
       <Stack spacing={2}>
         <GoogleAuthButton text="Sign in with Google" />
         
