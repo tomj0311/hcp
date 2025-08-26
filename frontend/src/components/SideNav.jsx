@@ -100,8 +100,8 @@ export default function SideNav({ role, onLogout, collapsed }) {
     <NavDrawer variant={isMobile ? 'temporary' : 'permanent'} open={isMobile ? !collapsed : true}>
       <Toolbar disableGutters sx={{ px: collapsed ? 0 : 2, minHeight:{xs:56, sm:64}, display:'flex', alignItems:'center', justifyContent: 'center', transition:'padding .25s ease' }}>
         <Box component={Link} to="/" sx={{ display:'flex', alignItems:'center', textDecoration:'none', color:'inherit', gap: collapsed ? 0 : 1 }}>
-          <Box sx={{width: collapsed ? 32 : 34, height: collapsed ? 32 : 34, borderRadius: (theme) => theme.shape.borderRadius, display:'flex',alignItems:'center',justifyContent:'center', background:alpha(theme.palette.primary.main,0.2), color:theme.palette.primary.main, fontSize: collapsed ? 14 : 16, fontWeight:700}}>H</Box>
-          {!collapsed && <Typography variant="subtitle1" sx={{ fontWeight:700, letterSpacing:.5, fontSize:{xs:14, sm:16}, lineHeight:1 }}>HCP</Typography>}
+          <Box sx={{width: collapsed ? 32 : 34, height: collapsed ? 32 : 34, borderRadius: (theme) => theme.shape.borderRadius, display:'flex',alignItems:'center',justifyContent:'center', background:alpha(theme.palette.primary.main,0.2), color:theme.palette.primary.main, fontSize: collapsed ? 12 : 14, fontWeight:700}}>CF</Box>
+          {!collapsed && <Typography variant="subtitle1" sx={{ fontWeight:700, letterSpacing:.5, fontSize:{xs:14, sm:16}, lineHeight:1 }}>ConsulFLOW</Typography>}
         </Box>
       </Toolbar>
   <Divider sx={{ borderColor: 'divider', transition:'border-color .25s ease' }} />

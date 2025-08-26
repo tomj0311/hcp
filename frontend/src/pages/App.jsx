@@ -104,7 +104,7 @@ export default function App(){
               {navCollapsed ? <Menu size={20} /> : <PanelLeftClose size={20} />}
             </IconButton>
           )}
-          <Typography variant="h6" sx={{fontWeight:700, fontSize:{xs:'1.1rem', sm:'1.25rem'}}}>ConsultFlow Platform</Typography>
+          <Typography variant="h6" sx={{fontWeight:700, fontSize:{xs:'1.1rem', sm:'1.25rem'}}}>ConsulFLOW</Typography>
           <Box sx={{flexGrow:1}} />
           {!auth && <Button component={Link} to="/login" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Consumer Login</Button>}
           {!auth && <Button component={Link} to="/adminLogin" color="inherit" sx={{fontSize:{xs:'0.8rem', sm:'0.875rem'}}}>Admin Login</Button>}
