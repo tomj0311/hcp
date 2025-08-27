@@ -17,5 +17,7 @@ jinja2==3.1.2
 aiosmtplib==3.0.1
 websockets==12.0
 email-validator==2.1.0
-bcrypt==4.1.2
+# NOTE: passlib 1.7.4 expects bcrypt to expose __about__.__version__,
+# which was removed in bcrypt 4.1.x. Pin to 4.0.1 to avoid noisy tracebacks.
+bcrypt==4.0.1
 PyJWT==2.8.0

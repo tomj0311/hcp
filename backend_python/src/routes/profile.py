@@ -152,7 +152,11 @@ async def update_profile(
         )
     
     # Prepare update data
-    update_data = profile_update.dict(exclude_unset=True)
+    # Pydantic v2 prefers model_dump over dict
+    try:
+        update_data = profile_update.model_dump(exclude_unset=True)  # type: ignore[attr-defined]
+    except Exception:
+        update_data = profile_update.dict(exclude_unset=True)
     
     # Update name if firstName or lastName changed
     if profile_update.firstName is not None or profile_update.lastName is not None:
