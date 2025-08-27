@@ -24,52 +24,53 @@ import { ArrowLeft as ArrowBackIcon, Send as SendIcon, MessageCircle as ChatBubb
 import PageHeader from './PageHeader.jsx';
 import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getAuthHeader } from '../utils/auth.js';
 
 /**
  * Consultation.jsx
  * Omnichannel consultation surface (Chat / Voice / Video placeholders + avatar)
  * Focus: polished UI, accessible, aligned with theme aesthetics.
  */
-export default function Consultation(){
+export default function Consultation() {
   console.log('[Consultation] Component mounting...');
-  
+
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   console.log('[Consultation] Route params and hooks initialized', { id, locationState: location.state });
 
-  const [provider,setProvider] = useState(location.state?.provider || null);
+  const [provider, setProvider] = useState(location.state?.provider || null);
   const meetupId = location.state?.meetupId || null;
-  const [meetup,setMeetup] = useState(null);
-  const [meetupError,setMeetupError] = useState('');
-  const [loading,setLoading] = useState(!provider);
-  const [channel,setChannel] = useState('video'); // Default to video first
-  const [messages,setMessages] = useState(()=>[
-  { id:'welcome', role:'system', text:'You are connected to your consultation provider. Your video consultation is ready to begin.' }
+  const [meetup, setMeetup] = useState(null);
+  const [meetupError, setMeetupError] = useState('');
+  const [loading, setLoading] = useState(!provider);
+  const [channel, setChannel] = useState('video'); // Default to video first
+  const [messages, setMessages] = useState(() => [
+    { id: 'welcome', role: 'system', text: 'You are connected to your consultation provider. Your video consultation is ready to begin.' }
   ]);
-  const [input,setInput] = useState('');
-  const [sending,setSending] = useState(false);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
-  
+
   // Media controls state
   const [micEnabled, setMicEnabled] = useState(false);
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [mediaStream, setMediaStream] = useState(null);
   const [mediaError, setMediaError] = useState('');
   const [showMediaSettings, setShowMediaSettings] = useState(false);
-  
+
   // Draggable video position state
-  const [videoPosition, setVideoPosition] = useState({ 
+  const [videoPosition, setVideoPosition] = useState({
     x: window.innerWidth / 2 - 80, // Center horizontally (80 = half of 160px)
     y: window.innerHeight / 2 - 80 // Center vertically
   });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  
+
   const chatEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -77,24 +78,24 @@ export default function Consultation(){
   const initialAutoScrollSkippedRef = useRef(false);
 
   // Fetch provider if not in navigation state (deep-link support)
-  useEffect(()=>{
-  // Debug initial state
-  // eslint-disable-next-line no-console
-  console.debug('[Consultation] init', { routeId:id, meetupId, providerFromState: !!location.state?.provider });
-  console.debug('[Consultation] location.state:', location.state);
-  console.debug('[Consultation] current provider:', provider);
-  
-  if(!provider){
-      (async()=>{
+  useEffect(() => {
+    // Debug initial state
+    // eslint-disable-next-line no-console
+    console.debug('[Consultation] init', { routeId: id, meetupId, providerFromState: !!location.state?.provider });
+    console.debug('[Consultation] location.state:', location.state);
+    console.debug('[Consultation] current provider:', provider);
+
+    if (!provider) {
+      (async () => {
         try {
-      console.debug('[Consultation] fetching providers list to resolve id');
-  const res = await axios.get(import.meta.env.VITE_API_URL + '/users/providers');
-      console.debug('[Consultation] providers response:', res.data);
-      const found = res.data.find(d=> String(d.id) === String(id));
-      console.debug('[Consultation] found provider:', found);
-      if(found) setProvider(found);
-      else console.warn('[Consultation] provider not found for id', id);
-        } catch(e){ 
+          console.debug('[Consultation] fetching providers list to resolve id');
+          const res = await axios.get(import.meta.env.VITE_API_URL + '/users/providers');
+          console.debug('[Consultation] providers response:', res.data);
+          const found = res.data.find(d => String(d.id) === String(id));
+          console.debug('[Consultation] found provider:', found);
+          if (found) setProvider(found);
+          else console.warn('[Consultation] provider not found for id', id);
+        } catch (e) {
           console.error('[Consultation] error fetching providers:', e);
         }
         setLoading(false);
@@ -103,32 +104,32 @@ export default function Consultation(){
       console.debug('[Consultation] provider already available from state');
       setLoading(false);
     }
-  },[provider,id]);
+  }, [provider, id]);
 
   // Fetch meetup details if meetupId provided (adds context & helps debugging)
-  useEffect(()=>{
-    if(!meetupId) return;
+  useEffect(() => {
+    if (!meetupId) return;
     let cancelled = false;
-    (async()=>{
+    (async () => {
       try {
         setMeetupError('');
         const res = await axios.get(import.meta.env.VITE_API_URL + '/meetups/' + meetupId);
-        if(!cancelled) setMeetup(res.data);
-      } catch(err){
-        if(!cancelled) setMeetupError(err?.response?.data?.error || 'Failed to load meetup');
+        if (!cancelled) setMeetup(res.data);
+      } catch (err) {
+        if (!cancelled) setMeetupError(err?.response?.data?.error || 'Failed to load meetup');
       }
     })();
-    return ()=> { cancelled = true; };
-  },[meetupId]);
+    return () => { cancelled = true; };
+  }, [meetupId]);
 
   // Only auto-scroll after initial mount to avoid jumping page to bottom when component first loads
-  useEffect(()=>{
-    if(!initialAutoScrollSkippedRef.current){
+  useEffect(() => {
+    if (!initialAutoScrollSkippedRef.current) {
       initialAutoScrollSkippedRef.current = true; // skip first render
       return;
     }
-    chatEndRef.current?.scrollIntoView({behavior:'smooth'});
-  },[messages]);
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // No overlay measurement; allow natural document flow.
 
@@ -139,20 +140,20 @@ export default function Consultation(){
       if (mediaStream) {
         mediaStream.getTracks().forEach(track => track.stop());
       }
-      
+
       const constraints = {};
       if (audio) constraints.audio = true;
       if (video) constraints.video = { width: 640, height: 480 };
-      
+
       if (audio || video) {
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         setMediaStream(stream);
-        
+
         // Set video stream immediately when camera is enabled
         if (videoRef.current && video) {
           videoRef.current.srcObject = stream;
         }
-        
+
         setMicEnabled(audio);
         setCameraEnabled(video);
       } else {
@@ -201,7 +202,7 @@ export default function Consultation(){
   // Draggable video functions
   const handleMouseDown = (e) => {
     if (!videoContainerRef.current) return;
-    
+
     setIsDragging(true);
     const rect = videoContainerRef.current.getBoundingClientRect();
     setDragOffset({
@@ -227,16 +228,16 @@ export default function Consultation(){
 
   const handleMouseMove = useCallback((e) => {
     if (!isDragging || !videoContainerRef.current) return;
-    
+
     const videoSize = window.innerWidth < 600 ? 120 : 160; // Match responsive sizing
-    
+
     let newX = e.clientX - dragOffset.x;
     let newY = e.clientY - dragOffset.y;
-    
+
     // Constrain to browser window boundaries
     newX = Math.max(0, Math.min(newX, window.innerWidth - videoSize));
     newY = Math.max(0, Math.min(newY, window.innerHeight - videoSize));
-    
+
     setVideoPosition({ x: newX, y: newY });
   }, [isDragging, dragOffset]);
 
@@ -258,7 +259,7 @@ export default function Consultation(){
   // Touch events for mobile dragging
   const handleTouchStart = (e) => {
     if (!videoContainerRef.current) return;
-    
+
     setIsDragging(true);
     const rect = videoContainerRef.current.getBoundingClientRect();
     const touch = e.touches[0];
@@ -271,17 +272,17 @@ export default function Consultation(){
 
   const handleTouchMove = useCallback((e) => {
     if (!isDragging || !videoContainerRef.current) return;
-    
+
     const videoSize = window.innerWidth < 600 ? 120 : 160;
     const touch = e.touches[0];
-    
+
     let newX = touch.clientX - dragOffset.x;
     let newY = touch.clientY - dragOffset.y;
-    
+
     // Constrain to browser window boundaries
     newX = Math.max(0, Math.min(newX, window.innerWidth - videoSize));
     newY = Math.max(0, Math.min(newY, window.innerHeight - videoSize));
-    
+
     setVideoPosition({ x: newX, y: newY });
     e.preventDefault();
   }, [isDragging, dragOffset]);
@@ -310,21 +311,21 @@ export default function Consultation(){
     };
   }, [mediaStream]);
 
-  const sendMessage = useCallback(()=>{
-    if(!input.trim()) return;
+  const sendMessage = useCallback(() => {
+    if (!input.trim()) return;
     const txt = input.trim();
-    setMessages(m=> [...m, { id: Date.now()+':user', role:'user', text: txt }]);
+    setMessages(m => [...m, { id: Date.now() + ':user', role: 'user', text: txt }]);
     setInput('');
     setSending(true);
     // Placeholder AI response simulation
-    setTimeout(()=>{
-      setMessages(m=> [...m, { id: Date.now()+':ai', role:'assistant', text:'(Placeholder) A helpful, professionally-aligned response will appear here. Avatar lip-sync + streaming will replace this in production.' }]);
+    setTimeout(() => {
+      setMessages(m => [...m, { id: Date.now() + ':ai', role: 'assistant', text: '(Placeholder) A helpful, professionally-aligned response will appear here. Avatar lip-sync + streaming will replace this in production.' }]);
       setSending(false);
     }, 650);
-  },[input]);
+  }, [input]);
 
-  const handleKey = (e)=>{
-    if(e.key==='Enter' && !e.shiftKey){
+  const handleKey = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -340,7 +341,7 @@ export default function Consultation(){
       }
       return true;
     });
-    
+
     setSelectedFiles(prev => [...prev, ...validFiles]);
     setUploadError('');
     // Reset file input
@@ -355,28 +356,27 @@ export default function Consultation(){
 
   const uploadFiles = async () => {
     if (selectedFiles.length === 0) return;
-    
+
     setUploading(true);
     setUploadError('');
     setUploadProgress(0);
-    
+
     try {
       const formData = new FormData();
       selectedFiles.forEach(file => {
         formData.append('files', file);
       });
 
-      const response = await axios.post(
+    const authHeaders = getAuthHeader();
+    const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/uploads/upload`,
         formData,
         {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+      // Do NOT set Content-Type manually; let the browser set proper multipart boundaries
+      headers: { ...authHeaders },
           onUploadProgress: (progressEvent) => {
-            const progress = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
+            const total = progressEvent.total || progressEvent.srcElement?.getResponseHeader?.('Content-Length') || 0;
+            const progress = total ? Math.round((progressEvent.loaded * 100) / total) : Math.round(progressEvent.loaded % 100);
             setUploadProgress(progress);
           },
         }
@@ -384,18 +384,19 @@ export default function Consultation(){
 
       // Add upload confirmation message to chat
       const fileNames = selectedFiles.map(f => f.name).join(', ');
-      setMessages(m => [...m, { 
-        id: Date.now() + ':upload', 
-        role: 'system', 
+      setMessages(m => [...m, {
+        id: Date.now() + ':upload',
+        role: 'system',
         text: `📎 Files uploaded successfully: ${fileNames}`,
         files: response.data.files
       }]);
-      
+
       setSelectedFiles([]);
       setUploadProgress(0);
     } catch (error) {
       console.error('Upload error:', error);
-      setUploadError(error.response?.data?.error || 'Upload failed');
+      const detail = error?.response?.data?.detail || error?.response?.data?.error || error?.message;
+      setUploadError(detail || 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -411,27 +412,27 @@ export default function Consultation(){
 
   return (
     <Box sx={{
-      display:'flex',
-      flexDirection:'column',
-      width:'100%',
-      maxWidth:{ xs:'100%', lg: 1400 },
-      mx:'auto',
-      px:{ xs:1, sm:2 },
-      boxSizing:'border-box'
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100%',
+      maxWidth: { xs: '100%', lg: 1400 },
+      mx: 'auto',
+      px: { xs: 1, sm: 2 },
+      boxSizing: 'border-box'
     }}>
       {/* Floating Video Preview - anchors bottom-right when settings open */}
-  {cameraEnabled && (
-        <Box 
+      {cameraEnabled && (
+        <Box
           ref={videoContainerRef}
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
-          sx={{ 
+          sx={{
             position: 'fixed',
             ...(showMediaSettings
               ? { right: 16, bottom: 16 }
               : { left: videoPosition.x, top: videoPosition.y }),
-    width: micEnabled ? { xs: 120, sm: 160, md: 190 } : { xs: 96, sm: 130, md: 160 },
-    height: micEnabled ? { xs: 120, sm: 160, md: 190 } : { xs: 96, sm: 130, md: 160 },
+            width: micEnabled ? { xs: 120, sm: 160, md: 190 } : { xs: 96, sm: 130, md: 160 },
+            height: micEnabled ? { xs: 120, sm: 160, md: 190 } : { xs: 96, sm: 130, md: 160 },
             borderRadius: '50%',
             overflow: 'hidden',
             border: '3px solid',
@@ -451,21 +452,21 @@ export default function Consultation(){
             autoPlay
             muted
             playsInline
-            style={{ 
-              width: '100%', 
-              height: '100%', 
+            style={{
+              width: '100%',
+              height: '100%',
               objectFit: 'cover',
               transform: 'scaleX(-1)',
               pointerEvents: 'none'
             }}
           />
-          <Typography variant="caption" sx={{ 
-            position: 'absolute', 
-            bottom: 8, 
+          <Typography variant="caption" sx={{
+            position: 'absolute',
+            bottom: 8,
             left: '50%',
             transform: 'translateX(-50%)',
             color: 'common.white',
-            backgroundColor: (theme)=> theme.palette.mode==='dark'? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.6)',
+            backgroundColor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.6)',
             px: 1.5,
             py: 0.5,
             borderRadius: (theme) => theme.shape.borderRadius,
@@ -479,11 +480,11 @@ export default function Consultation(){
       )}
 
       <Paper elevation={0} sx={{
-        p:{xs:1.5, sm:2.5, md:3},
-        display:'flex',
-        flexDirection:'column',
-        flex:1,
-        minHeight:0,
+        p: { xs: 1.5, sm: 2.5, md: 3 },
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
         // Use theme's default Paper border radius (will be 8 from theme)
       }} aria-label="consultation chat panel">
         <PageHeader
@@ -569,11 +570,11 @@ export default function Consultation(){
         )}
 
         {/* Enhanced Tab Navigation with larger, more accessible tabs */}
-  <Tabs 
-          value={channel} 
-          onChange={(e,v)=> setChannel(v)} 
-          aria-label="consultation mode selector" 
-          variant="fullWidth" 
+        <Tabs
+          value={channel}
+          onChange={(e, v) => setChannel(v)}
+          aria-label="consultation mode selector"
+          variant="fullWidth"
           sx={{
             mb: 2,
             '& .MuiTab-root': {
@@ -584,49 +585,49 @@ export default function Consultation(){
             }
           }}
         >
-          <Tab 
-            label="Video Call" 
-            value="video" 
-            icon={cameraEnabled ? <VideocamIcon fontSize="large" /> : <VideocamOffIcon fontSize="large" />} 
-            iconPosition="start" 
-            sx={{ 
-              color: cameraEnabled ? 'primary.main' : 'text.secondary',
-            }} 
-          />
-          <Tab 
-            label="Voice Call" 
-            value="voice" 
-            icon={micEnabled ? <MicIcon fontSize="large" /> : <MicOffIcon fontSize="large" />} 
+          <Tab
+            label="Video Call"
+            value="video"
+            icon={cameraEnabled ? <VideocamIcon fontSize="large" /> : <VideocamOffIcon fontSize="large" />}
             iconPosition="start"
-            sx={{ 
-              color: micEnabled ? 'primary.main' : 'text.secondary',
-            }} 
+            sx={{
+              color: cameraEnabled ? 'primary.main' : 'text.secondary',
+            }}
           />
-          <Tab 
-            label="Text Chat" 
-            value="chat" 
-            icon={<ChatBubbleOutlineIcon fontSize="large" />} 
-            iconPosition="start" 
+          <Tab
+            label="Voice Call"
+            value="voice"
+            icon={micEnabled ? <MicIcon fontSize="large" /> : <MicOffIcon fontSize="large" />}
+            iconPosition="start"
+            sx={{
+              color: micEnabled ? 'primary.main' : 'text.secondary',
+            }}
+          />
+          <Tab
+            label="Text Chat"
+            value="chat"
+            icon={<ChatBubbleOutlineIcon fontSize="large" />}
+            iconPosition="start"
           />
         </Tabs>
-        <Divider sx={{mb:2}} />
+        <Divider sx={{ mb: 2 }} />
         {/* Messages / Content Area */}
         <Box sx={{
-          flexGrow:1,
-          overflowY:'auto',
-          pr:{ xs:0.5, sm:1 },
-          scrollbarWidth:'thin',
+          flexGrow: 1,
+          overflowY: 'auto',
+          pr: { xs: 0.5, sm: 1 },
+          scrollbarWidth: 'thin',
           '&::-webkit-scrollbar': { width: 8 },
-          '&::-webkit-scrollbar-thumb': (theme)=> ({ backgroundColor: theme.palette.action.disabled, borderRadius: theme.shape.borderRadius })
+          '&::-webkit-scrollbar-thumb': (theme) => ({ backgroundColor: theme.palette.action.disabled, borderRadius: theme.shape.borderRadius })
         }} aria-label="conversation area">
-          {channel==='voice' && (
+          {channel === 'voice' && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Avatar sx={{ 
-                width: { xs: 120, sm: 150 }, 
-                height: { xs: 120, sm: 150 }, 
-                mx: 'auto', 
+              <Avatar sx={{
+                width: { xs: 120, sm: 150 },
+                height: { xs: 120, sm: 150 },
+                mx: 'auto',
                 mb: 3,
-                boxShadow: '0 8px 28px -10px rgba(0,0,0,0.45)' 
+                boxShadow: '0 8px 28px -10px rgba(0,0,0,0.45)'
               }} alt="Provider Avatar" />
               <Typography variant="h6" sx={{ mb: 2, fontSize: { xs: '1.1rem', sm: '1.3rem' } }}>
                 Voice Call with {provider?.name || 'Provider'}
@@ -637,7 +638,7 @@ export default function Consultation(){
                   size="large"
                   startIcon={micEnabled ? <MicIcon /> : <MicOffIcon />}
                   onClick={toggleMicrophone}
-                  sx={{ 
+                  sx={{
                     minWidth: 140,
                     fontSize: '1rem',
                     py: 1.5
@@ -646,18 +647,18 @@ export default function Consultation(){
                   {micEnabled ? 'Mute' : 'Unmute'}
                 </Button>
               </Stack>
-              <Typography variant="body1" color="text.secondary" sx={{fontSize: '1rem', lineHeight: 1.6}}>
+              <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
                 {micEnabled ? 'Voice call is active. Speak clearly to communicate with your provider.' : 'Click "Unmute" to start your voice consultation.'}
               </Typography>
             </Box>
           )}
-          
-          {channel==='video' && (
+
+          {channel === 'video' && (
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               {/* Video Call Interface */}
-              <Box sx={(theme)=>({
+              <Box sx={(theme) => ({
                 mb: 2,
-                p: { xs:2, sm:3 },
+                p: { xs: 2, sm: 3 },
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -665,35 +666,35 @@ export default function Consultation(){
                 textAlign: 'center',
                 borderRadius: theme.shape.borderRadius,
                 minHeight: { xs: 240, sm: 340, md: 400 },
-                background: theme.palette.mode==='dark'
+                background: theme.palette.mode === 'dark'
                   ? `linear-gradient(135deg, ${theme.palette.background.default} 0%, ${theme.palette.background.paper} 65%)`
                   : `linear-gradient(135deg, ${theme.palette.action.hover} 0%, ${theme.palette.background.paper} 65%)`,
                 boxShadow: `inset 0 0 0 1px ${theme.palette.divider}`,
                 position: 'relative',
                 overflow: 'hidden'
               })} aria-label="video call interface">
-                
+
                 {/* (Floating preview handled globally outside this container) */}
-                
+
                 {/* Provider Video Placeholder */}
                 <Avatar sx={{
-                  width: { xs: 120, sm: 150 }, 
-                  height: { xs: 120, sm: 150 }, 
+                  width: { xs: 120, sm: 150 },
+                  height: { xs: 120, sm: 150 },
                   boxShadow: '0 8px 28px -10px rgba(0,0,0,0.45)',
                   mb: 2
                 }} alt="Provider Avatar" />
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, fontSize: { xs: '1.1rem', sm: '1.3rem' } }}>
                   {provider?.name || 'Provider'}
                 </Typography>
-                
+
                 {/* Video Controls */}
-                <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap:'wrap', justifyContent:'center', rowGap:1 }}>
+                <Stack direction="row" spacing={2} sx={{ mb: 2, flexWrap: 'wrap', justifyContent: 'center', rowGap: 1 }}>
                   <Button
                     variant={cameraEnabled ? "contained" : "outlined"}
                     size="large"
                     startIcon={cameraEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
                     onClick={toggleCamera}
-                    sx={{ 
+                    sx={{
                       minWidth: 140,
                       fontSize: '1rem',
                       py: 1.5
@@ -707,7 +708,7 @@ export default function Consultation(){
                     size="large"
                     startIcon={micEnabled ? <MicIcon /> : <MicOffIcon />}
                     onClick={toggleMicrophone}
-                    sx={{ 
+                    sx={{
                       minWidth: 140,
                       fontSize: '1rem',
                       py: 1.5
@@ -717,44 +718,44 @@ export default function Consultation(){
                     {micEnabled ? 'Mic On' : 'Turn On Mic'}
                   </Button>
                 </Stack>
-                
+
                 <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem', maxWidth: 400, lineHeight: 1.5 }}>
-                  {cameraEnabled || micEnabled 
+                  {cameraEnabled || micEnabled
                     ? 'Your video consultation is ready. The provider can see and hear you.'
                     : 'Turn on your camera and microphone to start your video consultation.'
                   }
                 </Typography>
               </Box>
-              
+
               {/* Chat Messages for Video Mode - separate scrollable area */}
-              <Box sx={{ flexGrow: 1, overflowY: 'auto', maxHeight: { xs: 160, sm: 200 }, pr:0.5 }}>
-                {messages.map(m=> (
-                  <Stack key={m.id} alignItems={m.role==='user'? 'flex-end':'flex-start'} sx={{mb:1.5}}>
-                    <Paper variant="outlined" sx={(theme)=>({
-                      px:2, py:1.5,
-                      maxWidth:'85%',
-                      background: m.role==='user'
+              <Box sx={{ flexGrow: 1, overflowY: 'auto', maxHeight: { xs: 160, sm: 200 }, pr: 0.5 }}>
+                {messages.map(m => (
+                  <Stack key={m.id} alignItems={m.role === 'user' ? 'flex-end' : 'flex-start'} sx={{ mb: 1.5 }}>
+                    <Paper variant="outlined" sx={(theme) => ({
+                      px: 2, py: 1.5,
+                      maxWidth: '85%',
+                      background: m.role === 'user'
                         ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 85%)`
-                        : m.role==='system'
-                        ? (theme.palette.mode==='dark'? theme.palette.action.selected : theme.palette.success.lighter)
-                        : (theme.palette.mode==='dark'? theme.palette.background.paper : theme.palette.background.default),
-                      color: m.role==='user'? 'common.white': undefined,
-                      borderColor: m.role==='user'? 'transparent': 'divider',
-                      boxShadow: m.role==='user'? '0 4px 16px -6px rgba(0,0,0,0.45)':'none'
-                    })} aria-label={m.role==='user'? 'user message': m.role==='system'? 'system message':'ai message'}>
-                      <Typography variant="body2" sx={{fontSize:{xs:'0.8rem', sm:'0.85rem'}, lineHeight: 1.4}}>{m.text}</Typography>
+                        : m.role === 'system'
+                          ? (theme.palette.mode === 'dark' ? theme.palette.action.selected : theme.palette.success.lighter)
+                          : (theme.palette.mode === 'dark' ? theme.palette.background.paper : theme.palette.background.default),
+                      color: m.role === 'user' ? 'common.white' : undefined,
+                      borderColor: m.role === 'user' ? 'transparent' : 'divider',
+                      boxShadow: m.role === 'user' ? '0 4px 16px -6px rgba(0,0,0,0.45)' : 'none'
+                    })} aria-label={m.role === 'user' ? 'user message' : m.role === 'system' ? 'system message' : 'ai message'}>
+                      <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.85rem' }, lineHeight: 1.4 }}>{m.text}</Typography>
                       {m.files && m.files.length > 0 && (
                         <Box sx={{ mt: 1 }}>
                           {m.files.map((file, index) => (
                             <Chip
                               key={index}
-                              label={file.originalName}
+                              label={file.originalName || file.filename || 'file'}
                               size="small"
-                              sx={{ 
-                                fontSize: '0.7rem', 
-                                mr: 0.5, 
+                              sx={{
+                                fontSize: '0.7rem',
+                                mr: 0.5,
                                 mb: 0.5,
-                                backgroundColor: m.role === 'user' ? (theme)=> theme.palette.action.hover : undefined
+                                backgroundColor: m.role === 'user' ? (theme) => theme.palette.action.hover : undefined
                               }}
                             />
                           ))}
@@ -767,36 +768,36 @@ export default function Consultation(){
               </Box>
             </Box>
           )}
-          
-          {channel==='chat' && (
+
+          {channel === 'chat' && (
             <>
-              {messages.map(m=> (
-                <Stack key={m.id} alignItems={m.role==='user'? 'flex-end':'flex-start'} sx={{mb:2}}>
-                  <Paper variant="outlined" sx={(theme)=>({
-                    px:2, py:1.5,
-                    maxWidth:'85%',
-                    background: m.role==='user'
+              {messages.map(m => (
+                <Stack key={m.id} alignItems={m.role === 'user' ? 'flex-end' : 'flex-start'} sx={{ mb: 2 }}>
+                  <Paper variant="outlined" sx={(theme) => ({
+                    px: 2, py: 1.5,
+                    maxWidth: '85%',
+                    background: m.role === 'user'
                       ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 85%)`
-                      : m.role==='system'
-                      ? (theme.palette.mode==='dark'? theme.palette.action.selected : theme.palette.success.lighter)
-                      : (theme.palette.mode==='dark'? theme.palette.background.paper : theme.palette.background.default),
-                    color: m.role==='user'? 'common.white': undefined,
-                    borderColor: m.role==='user'? 'transparent': 'divider',
-                    boxShadow: m.role==='user'? '0 4px 16px -6px rgba(0,0,0,0.45)':'none'
-                  })} aria-label={m.role==='user'? 'user message': m.role==='system'? 'system message':'ai message'}>
-                    <Typography variant="body1" sx={{fontSize:{xs:'0.9rem', sm:'1rem'}, lineHeight: 1.5}}>{m.text}</Typography>
+                      : m.role === 'system'
+                        ? (theme.palette.mode === 'dark' ? theme.palette.action.selected : theme.palette.success.lighter)
+                        : (theme.palette.mode === 'dark' ? theme.palette.background.paper : theme.palette.background.default),
+                    color: m.role === 'user' ? 'common.white' : undefined,
+                    borderColor: m.role === 'user' ? 'transparent' : 'divider',
+                    boxShadow: m.role === 'user' ? '0 4px 16px -6px rgba(0,0,0,0.45)' : 'none'
+                  })} aria-label={m.role === 'user' ? 'user message' : m.role === 'system' ? 'system message' : 'ai message'}>
+                    <Typography variant="body1" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' }, lineHeight: 1.5 }}>{m.text}</Typography>
                     {m.files && m.files.length > 0 && (
                       <Box sx={{ mt: 1 }}>
                         {m.files.map((file, index) => (
                           <Chip
                             key={index}
-                            label={file.originalName}
+                            label={file.originalName || file.filename || 'file'}
                             size="medium"
-                            sx={{ 
-                              fontSize: '0.8rem', 
-                              mr: 0.5, 
+                            sx={{
+                              fontSize: '0.8rem',
+                              mr: 0.5,
                               mb: 0.5,
-                              backgroundColor: m.role === 'user' ? (theme)=> theme.palette.action.hover : undefined
+                              backgroundColor: m.role === 'user' ? (theme) => theme.palette.action.hover : undefined
                             }}
                           />
                         ))}
@@ -809,7 +810,7 @@ export default function Consultation(){
             </>
           )}
         </Box>
-        
+
         {/* File Upload Section */}
         {(channel === 'chat' || channel === 'video') && (
           <>
@@ -818,7 +819,7 @@ export default function Consultation(){
                 {uploadError}
               </Alert>
             )}
-            
+
             {selectedFiles.length > 0 && (
               <Box sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" sx={{ mb: 1.5, fontSize: '1rem', fontWeight: 600 }}>
@@ -869,11 +870,11 @@ export default function Consultation(){
             )}
           </>
         )}
-        
-        <Divider sx={{my:2}} />
-        
+
+        <Divider sx={{ my: 2 }} />
+
         {/* Enhanced Chat Input with larger, more accessible controls */}
-  <Stack direction="row" spacing={{ xs:1, sm:2 }} alignItems="center" component="form" onSubmit={(e)=>{e.preventDefault(); sendMessage();}} aria-label="chat input form" sx={{ mt:{ xs:1, sm:2 } }}>
+        <Stack direction="row" spacing={{ xs: 1, sm: 2 }} alignItems="center" component="form" onSubmit={(e) => { e.preventDefault(); sendMessage(); }} aria-label="chat input form" sx={{ mt: { xs: 1, sm: 2 } }}>
           <input
             type="file"
             ref={fileInputRef}
@@ -890,8 +891,8 @@ export default function Consultation(){
             size="large"
             sx={{
               borderRadius: '50%',
-              width: { xs:42, sm:48 },
-              height: { xs:42, sm:48 },
+              width: { xs: 42, sm: 48 },
+              height: { xs: 42, sm: 48 },
               border: '2px solid',
               borderColor: 'primary.main',
               bgcolor: 'background.paper',
@@ -907,16 +908,16 @@ export default function Consultation(){
           </IconButton>
           <TextField
             size="medium"
-            placeholder={channel==='chat' || channel==='video'? 'Type your message here...':'Voice mode - use microphone to speak'}
+            placeholder={channel === 'chat' || channel === 'video' ? 'Type your message here...' : 'Voice mode - use microphone to speak'}
             fullWidth
             multiline
             minRows={2}
             maxRows={4}
-            disabled={channel==='voice'}
+            disabled={channel === 'voice'}
             value={input}
-            onChange={e=> setInput(e.target.value)}
+            onChange={e => setInput(e.target.value)}
             onKeyDown={handleKey}
-            inputProps={{'aria-label':'chat input'}}
+            inputProps={{ 'aria-label': 'chat input' }}
             sx={{
               '& .MuiInputBase-root': {
                 alignItems: 'flex-start',
@@ -928,16 +929,16 @@ export default function Consultation(){
               }
             }}
           />
-      <IconButton 
-            color="primary" 
-            type="submit" 
-            aria-label="send message" 
-            disabled={!input.trim() || sending || channel==='voice'}
+          <IconButton
+            color="primary"
+            type="submit"
+            aria-label="send message"
+            disabled={!input.trim() || sending || channel === 'voice'}
             size="large"
             sx={{
               borderRadius: '50%',
-        width: { xs:42, sm:48 },
-        height: { xs:42, sm:48 },
+              width: { xs: 42, sm: 48 },
+              height: { xs: 42, sm: 48 },
               border: '2px solid',
               borderColor: 'primary.main',
               bgcolor: input.trim() ? 'primary.main' : 'background.paper',
@@ -957,8 +958,8 @@ export default function Consultation(){
             <SendIcon />
           </IconButton>
         </Stack>
-        <Typography variant="body2" color="text.secondary" sx={{mt:1.5, fontSize:{xs:'0.8rem', sm:'0.85rem'}, textAlign: 'center', lineHeight: 1.4}}>
-          This is a secure consultation platform. Your privacy is protected. 
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, fontSize: { xs: '0.8rem', sm: '0.85rem' }, textAlign: 'center', lineHeight: 1.4 }}>
+          This is a secure consultation platform. Your privacy is protected.
           Video and voice calls connect you directly with professional consultants.
         </Typography>
       </Paper>

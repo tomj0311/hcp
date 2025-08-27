@@ -1,6 +1,6 @@
 import React from 'react';
 import { Grid, Card, CardContent, Typography, Button, List, ListItem, ListItemIcon, ListItemText, Chip, Box } from '@mui/material';
-import { CheckCircle as CheckIcon } from 'lucide-react';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import axios from 'axios';
 import PageHeader from './PageHeader.jsx';
 
@@ -22,15 +22,24 @@ export default function Pricing(){
         {tiers.map(t => (
           <Grid item xs={12} sm={6} md={4} key={t.title}>
             <Card sx={{height:'100%', position:'relative', overflow:'hidden', display:'flex', flexDirection:'column', border:(theme)=> t.color!=='default'? `1px solid ${theme.palette[t.color].main}`:`1px solid ${theme.palette.divider}`, backdropFilter:'blur(4px)', boxShadow:(theme)=> t.color!=='default'? '0 8px 32px -12px rgba(0,0,0,0.25)':'0 4px 18px -8px rgba(0,0,0,0.15)', transition:'box-shadow .25s, transform .25s', '&:hover':{boxShadow:'0 12px 42px -10px rgba(0,0,0,0.35)', transform:'translateY(-4px)'}, maxWidth:{xs:'400px', sm:'none'}, mx:{xs:'auto', sm:0}}}>
-              {t.color!=='default' && <Chip label="Popular" size="small" color={t.color} sx={{position:'absolute', top:{xs:8, sm:12}, right:{xs:8, sm:12}, fontSize:{xs:'0.7rem', sm:'0.75rem'}}}/>}
-              <CardContent sx={{p:{xs:2, sm:3}, display:'flex', flexDirection:'column', flexGrow:1}}>
+              {t.color!=='default' && (
+                <Chip
+                  label="Popular"
+                  size="small"
+                  color={t.color}
+                  sx={{ position:'absolute', top:{xs:8, sm:12}, right:{xs:8, sm:12}, fontSize:{xs:'0.7rem', sm:'0.75rem'} }}
+                />
+              )}
+              <CardContent sx={{ p:{xs:2, sm:3}, pt: t.color!=='default' ? { xs:4.5, sm:5 } : undefined, display:'flex', flexDirection:'column', flexGrow:1 }}>
                 <Typography variant="h6" gutterBottom sx={{fontWeight:700, letterSpacing:.3, fontSize:{xs:'1.1rem', sm:'1.25rem'}}}>{t.title}</Typography>
                 <Typography variant="h3" gutterBottom sx={{fontWeight:700, fontSize:{xs:'2rem', sm:'2.5rem', md:'3rem'}}}>{t.price}</Typography>
                 <Typography variant="body2" sx={{mb:2, minHeight:{xs:40, sm:48}, fontSize:{xs:'0.85rem', sm:'0.875rem'}}}>{t.desc}</Typography>
                 <List dense sx={{'& .MuiListItem-root':{alignItems:'flex-start', py:{xs:0.25, sm:0}}, flexGrow:1}}>
                   {t.features.map(f => (
                     <ListItem key={f} sx={{py:{xs:0.25, sm:0}}}>
-                      <ListItemIcon sx={{minWidth:{xs:28, sm:32}}}><CheckIcon fontSize="small" color={t.color==='default'? 'success': t.color} /></ListItemIcon>
+                      <ListItemIcon sx={{minWidth:{xs:28, sm:32}}}>
+                        <CheckCircleIcon fontSize="small" color={t.color==='default' ? 'success' : t.color} />
+                      </ListItemIcon>
                       <ListItemText primaryTypographyProps={{variant:'caption', fontSize:{xs:'0.7rem', sm:'0.75rem'}}} primary={f} />
                     </ListItem>
                   ))}

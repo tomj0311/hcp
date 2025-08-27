@@ -1,13 +1,20 @@
 import os
+import sys
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from fastapi import APIRouter, HTTPException, Depends, status, UploadFile, File
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 
-from ..db import get_db, get_bucket, get_collections
 from ..utils.auth import verify_token_middleware
+
+try:  # Prefer eager import, but keep details if it fails
+    from minio import Minio  # type: ignore
+    _MINIO_IMPORT_ERROR: str | None = None
+except Exception as _e:  # pragma: no cover - tests patch client, import may be absent
+    Minio = None  # type: ignore
+    _MINIO_IMPORT_ERROR = repr(_e)
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +46,48 @@ def validate_file(file: UploadFile) -> None:
     # Size validation would need to be done during reading
 
 
+# --- MinIO helpers -----------------------------------------------------------
+def get_minio_client():
+        """Create a MinIO client from environment variables.
+
+        Defaults:
+            - endpoint: 127.0.0.1:8803
+            - access/secret: minioadmin/minioadmin
+            - secure: False
+        """
+        # Lazy import in case the module was installed after process start
+        global Minio, _MINIO_IMPORT_ERROR
+        if Minio is None:
+            try:
+                from minio import Minio as _Minio  # type: ignore
+                Minio = _Minio  # type: ignore
+                _MINIO_IMPORT_ERROR = None
+            except Exception as e:  # pragma: no cover
+                _MINIO_IMPORT_ERROR = repr(e)
+                # Log helpful diagnostics
+                logger.error("MinIO import failed: %s | python=%s", _MINIO_IMPORT_ERROR, sys.executable)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="MinIO client unavailable: install the 'minio' package on the backend or configure storage."
+                )
+        endpoint = os.getenv("MINIO_ENDPOINT", "127.0.0.1:8803")
+        access_key = os.getenv("MINIO_ACCESS_KEY", "minio")
+        secret_key = os.getenv("MINIO_SECRET_KEY", "minio8888")
+        secure = os.getenv("MINIO_SECURE", "false").lower() == "true"
+        # The tests will monkeypatch this function to return a fake client
+        return Minio(endpoint, access_key=access_key, secret_key=secret_key, secure=secure)  # type: ignore
+
+
+def get_bucket_name() -> str:
+    return os.getenv("MINIO_BUCKET", "hcp")
+
+
 @router.post("/upload")
 async def upload_files(
     files: List[UploadFile] = File(...),
     user: dict = Depends(verify_token_middleware)
 ):
-    """Upload files to GridFS"""
+    """Upload files to MinIO S3 bucket with user email prefix."""
     if not files:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -58,48 +101,56 @@ async def upload_files(
         )
     
     try:
-        bucket = get_bucket()
-        user_email = user.get("email")
+        client = get_minio_client()
+        bucket_name = get_bucket_name()
+        user_email = user.get("email") or "unknown"
+
+        # Ensure bucket exists
+        try:
+            if hasattr(client, "bucket_exists") and not client.bucket_exists(bucket_name):  # type: ignore
+                client.make_bucket(bucket_name)  # type: ignore
+        except Exception:
+            # If check fails, continue and let put_object surface errors
+            pass
+
         results = []
-        
+
         for file in files:
             validate_file(file)
-            
-            # Read file content
+
             content = await file.read()
-            
-            # Check file size
             if len(content) > MAX_FILE_SIZE:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"File {file.filename} too large. Maximum size is 200MB."
                 )
-            
-            # Generate unique filename
+
             timestamp = int(datetime.now().timestamp() * 1000)
             random_part = os.urandom(4).hex()
             filename = f"{timestamp}-{random_part}-{file.filename}"
-            
-            # Upload to GridFS
-            file_id = await bucket.upload_from_stream(
-                filename,
-                BytesIO(content),
-                metadata={"email": user_email}
-            )
-            
+            object_name = f"{user_email}/{filename}"
+
+            # Upload to MinIO
+            data_stream = BytesIO(content)
+            size = len(content)
+            content_type = file.content_type or "application/octet-stream"
+            client.put_object(bucket_name, object_name, data_stream, size, content_type=content_type)  # type: ignore
+
             results.append({
                 "filename": filename,
-                "size": len(content),
-                "mimetype": file.content_type,
-                "id": str(file_id)
+                "originalName": file.filename,
+                "size": size,
+                "mimetype": content_type,
+                "key": object_name,
             })
-        
+
         return {
             "message": "Files uploaded successfully",
             "files": results,
-            "userEmail": user_email
+            "userEmail": user_email,
+            "bucket": bucket_name,
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -114,24 +165,27 @@ async def upload_files(
 async def get_user_files(user: dict = Depends(verify_token_middleware)):
     """Get user's uploaded files"""
     try:
-        bucket = get_bucket()
-        user_email = user.get("email")
-        
-        # Find files for this user
-        cursor = bucket.find({"metadata.email": user_email})
-        files = await cursor.to_list(None)
-        
+        client = get_minio_client()
+        bucket_name = get_bucket_name()
+        user_email = user.get("email") or "unknown"
+
+        # List objects with user's prefix
+        prefix = f"{user_email}/"
+        objs = client.list_objects(bucket_name, prefix=prefix, recursive=True)  # type: ignore
+
         file_list = []
-        for f in files:
+        for obj in objs:
+            # obj.object_name like 'email/filename'
+            name = obj.object_name.split("/", 1)[1] if "/" in obj.object_name else obj.object_name
             file_list.append({
-                "filename": f.filename,
-                "size": f.length,
-                "uploadDate": f.upload_date,
-                "id": str(f._id)
+                "filename": name,
+                "size": getattr(obj, "size", None),
+                "uploadDate": getattr(obj, "last_modified", None),
+                "key": obj.object_name,
             })
-        
+
         return {"files": file_list}
-        
+
     except Exception as e:
         logger.error(f"Error fetching files: {e}")
         raise HTTPException(
@@ -147,34 +201,32 @@ async def download_file(
 ):
     """Download a file by filename"""
     try:
-        bucket = get_bucket()
-        user_email = user.get("email")
-        
-        # Find the file
-        file_doc = await bucket.find_one({
-            "filename": filename,
-            "metadata.email": user_email
-        })
-        
-        if not file_doc:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="File not found"
-            )
-        
-        # Get file content
-        file_content = await bucket.open_download_stream(file_doc._id).read()
-        
-        # Create streaming response
+        client = get_minio_client()
+        bucket_name = get_bucket_name()
+        user_email = user.get("email") or "unknown"
+
+        object_name = f"{user_email}/{filename}"
+        try:
+            obj = client.get_object(bucket_name, object_name)  # type: ignore
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+
+        # Read entire content
+        try:
+            content = obj.read()  # type: ignore
+        except Exception:
+            # Some clients return a stream-like object with read()
+            content = obj.read() if hasattr(obj, "read") else bytes()
+
         def iterfile():
-            yield file_content
-        
+            yield content
+
         return StreamingResponse(
             iterfile(),
-            media_type=file_doc.content_type or "application/octet-stream",
+            media_type="application/octet-stream",
             headers={"Content-Disposition": f"attachment; filename={filename}"}
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -183,3 +235,17 @@ async def download_file(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to download file"
         )
+
+
+@router.get("/diag")
+async def uploads_diagnostics():
+    """Lightweight diagnostics to debug upload 500s without changing code."""
+    return {
+        "minioImport": "ok" if Minio is not None else f"missing: {_MINIO_IMPORT_ERROR}",
+        "python": sys.executable,
+        "env": {
+            "MINIO_ENDPOINT": os.getenv("MINIO_ENDPOINT", "(unset)"),
+            "MINIO_SECURE": os.getenv("MINIO_SECURE", "(unset)"),
+            "MINIO_BUCKET": os.getenv("MINIO_BUCKET", "(unset)"),
+        },
+    }

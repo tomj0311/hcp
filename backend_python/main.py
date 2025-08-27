@@ -98,7 +98,9 @@ setup_websocket_routes(app)
 if __name__ == "__main__":
     port = int(os.getenv('PORT', 4000))
     use_tls = os.getenv('TLS_KEY') and os.getenv('TLS_CERT')
-    
+    # Avoid in-process reload on Windows; use dev scripts/CLI for reload instead.
+    reload_flag = os.getenv('UVICORN_RELOAD', '').lower() in {"1", "true", "yes"}
+
     if use_tls:
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ssl_context.load_cert_chain(
@@ -106,16 +108,16 @@ if __name__ == "__main__":
             os.getenv('TLS_KEY')
         )
         uvicorn.run(
-            "main:app",
+            app,
             host="0.0.0.0",
             port=port,
             ssl_context=ssl_context,
-            reload=True
+            reload=reload_flag
         )
     else:
         uvicorn.run(
-            "main:app",
+            app,
             host="0.0.0.0",
             port=port,
-            reload=True
+            reload=reload_flag
         )

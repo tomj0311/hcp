@@ -31,7 +31,24 @@ def main():
         python_path = os.path.join(venv_path, 'bin', 'python')
     
     print("Starting FastAPI development server...")
-    subprocess.run([python_path, '-m', 'uvicorn', 'main:app', '--reload', '--host', '0.0.0.0', '--port', '4000'])
+    # On Windows, prefer polling reload to avoid watchdog-related stdin glitches
+    # Prepare environment overrides for the child process
+    child_env = os.environ.copy()
+    if os.name == 'nt':
+        child_env.setdefault('WATCHFILES_FORCE_POLLING', '1')
+        child_env.setdefault('PYTHONUNBUFFERED', '1')
+        child_env.setdefault('PYTHONLEGACYWINDOWSSTDIO', '1')
+        # Also set flag so main.py avoids in-process reload when directly run
+        child_env.setdefault('UVICORN_RELOAD', 'true')
+
+    cmd = [
+        python_path, '-m', 'uvicorn', 'main:app',
+        '--host', '0.0.0.0', '--port', '4000',
+    '--reload', '--reload-impl', 'statreload', '--reload-dir', 'src', '--reload-dir', '.',
+        '--reload-delay', '0.5', '--log-level', 'info', '--no-access-log',
+        '--reload-exclude', 'venv', '--reload-exclude', '__pycache__', '--reload-exclude', '.git'
+    ]
+    subprocess.run(cmd, env=child_env)
 
 if __name__ == '__main__':
     main()
