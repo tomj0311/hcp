@@ -149,7 +149,7 @@ export default function ProjectDashboard({ token, mode, onToggleMode }) {
             <IconButton onClick={() => navigate('/automation')} size="small">
               <ArrowLeft />
             </IconButton>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
+            <Typography variant="h6" component="h1" sx={{ fontWeight: 600 }}>
               {project.name}
             </Typography>
           </Stack>
@@ -162,7 +162,7 @@ export default function ProjectDashboard({ token, mode, onToggleMode }) {
       <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h3" color="primary" sx={{ fontWeight: 700 }}>
+            <Typography variant="h6" color="primary" sx={{ fontWeight: 600 }}>
               {analytics.totalTests}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -172,7 +172,7 @@ export default function ProjectDashboard({ token, mode, onToggleMode }) {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Paper sx={{ p: 2, textAlign: 'center' }}>
-            <Typography variant="h3" color="success.main" sx={{ fontWeight: 700 }}>
+            <Typography variant="h6" color="success.main" sx={{ fontWeight: 600 }}>
               {analytics.passedTests}
             </Typography>
             <Typography variant="body2" color="text.secondary">

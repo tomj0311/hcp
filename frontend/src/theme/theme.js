@@ -97,6 +97,19 @@ export const getDesignTokens = (mode) => ({
       styleOverrides: {
         root: ({ theme }) => ({
           borderRadius: theme.shape.borderRadius,
+          backgroundColor: theme.palette.mode==='dark' ? '#2a2a2a' : '#ffffff',
+          border: theme.palette.mode==='dark' ? '1px solid #3a3a3a' : '1px solid #e5e8ef',
+          boxShadow: theme.palette.mode==='dark' 
+            ? '0 2px 8px rgba(0,0,0,0.4)' 
+            : '0 2px 8px rgba(0,0,0,0.1)',
+          '&:hover': {
+            backgroundColor: theme.palette.mode==='dark' ? '#323232' : '#fafafa',
+            boxShadow: theme.palette.mode==='dark' 
+              ? '0 8px 32px rgba(0,0,0,0.6)' 
+              : '0 8px 32px rgba(0,0,0,0.15)',
+            transform: 'translateY(-2px)',
+            transition: 'all 0.2s ease-in-out'
+          }
         })
       }
     },

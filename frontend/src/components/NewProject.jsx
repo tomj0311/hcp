@@ -58,7 +58,7 @@ export default function NewProject({ token }) {
             <IconButton onClick={() => navigate('/automation')} size="small">
               <ArrowLeft />
             </IconButton>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
+            <Typography variant="subtitle1" component="h1" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>
               New Project
             </Typography>
           </Stack>

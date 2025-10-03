@@ -42,7 +42,7 @@ export default function Dashboard({ token, onRequestConsult, mode, onToggleMode,
   return (
     <Box sx={{px:{xs:1, sm:0}}}>
       <PageHeader
-        title={`CONSULTFLOW — ${role==='consumer' ? 'Consumer Dashboard' : role==='provider' ? 'Provider Dashboard' : 'Admin Dashboard'}`}
+        title={`Zea-AI — ${role==='consumer' ? 'Consumer Dashboard' : role==='provider' ? 'Provider Dashboard' : 'Admin Dashboard'}`}
         actions={(
           <Stack direction="row" spacing={1} alignItems="center">
             <Typography variant="caption" sx={{fontSize:{xs:'0.7rem', sm:'0.75rem'}}}>{mode==='dark'? 'Dark':'Light'} mode</Typography>

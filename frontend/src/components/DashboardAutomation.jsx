@@ -104,7 +104,7 @@ export default function DashboardAutomation({ token, mode, onToggleMode, role })
             boxShadow: '0 6px 26px -10px rgba(0,0,0,0.35)'
           })}>
             <div>
-              <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: { xs: '1.2rem', sm: '1.4rem' } }}>
                 {analytics.totalProjects}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
@@ -127,7 +127,7 @@ export default function DashboardAutomation({ token, mode, onToggleMode, role })
             boxShadow: '0 6px 26px -10px rgba(0,0,0,0.35)'
           })}>
             <div>
-              <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: { xs: '1.2rem', sm: '1.4rem' } }}>
                 {analytics.totalTestCases}
               </Typography>
               <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
@@ -150,7 +150,7 @@ export default function DashboardAutomation({ token, mode, onToggleMode, role })
             boxShadow: '0 6px 26px -10px rgba(0,0,0,0.35)'
           })}>
             <div>
-              <Typography variant="h4" sx={{ fontWeight: 700, fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+              <Typography variant="h6" sx={{ fontWeight: 600, fontSize: { xs: '1.2rem', sm: '1.4rem' } }}>
                 {analytics.passRate}%
               </Typography>
               <Typography variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
