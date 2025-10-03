@@ -377,6 +377,51 @@ async def get_analytics(current_user: dict = Depends(verify_token_middleware)):
         logger.error(f"Error fetching analytics: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch analytics")
 
+@router.put("/testcases/{test_case_id}", response_model=TestCaseResponse)
+async def update_test_case(test_case_id: str, test_case: TestCase, current_user: dict = Depends(verify_token_middleware)):
+    """Update an existing test case"""
+    collections = get_collections()
+    
+    try:
+        # Verify test case exists
+        existing_test_case = await collections['automationTestCases'].find_one({"id": test_case_id})
+        if not existing_test_case:
+            raise HTTPException(status_code=404, detail="Test case not found")
+        
+        # Verify project exists
+        project = await collections['automationProjects'].find_one({"id": test_case.projectId})
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        # Update test case
+        update_data = {
+            "name": test_case.name,
+            "description": test_case.description,
+            "steps": test_case.steps,
+            "projectId": test_case.projectId,
+            "updatedAt": datetime.utcnow().isoformat()
+        }
+        
+        result = await collections['automationTestCases'].update_one(
+            {"id": test_case_id},
+            {"$set": update_data}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=500, detail="Failed to update test case")
+        
+        # Get updated test case
+        updated_test_case = await collections['automationTestCases'].find_one({"id": test_case_id})
+        updated_test_case['id'] = updated_test_case.get('id', str(updated_test_case['_id']))
+        updated_test_case.pop('_id', None)
+        
+        return updated_test_case
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating test case {test_case_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update test case")
+
 @router.delete("/testcases/{test_case_id}")
 async def delete_test_case(test_case_id: str, current_user: dict = Depends(verify_token_middleware)):
     """Delete a test case"""

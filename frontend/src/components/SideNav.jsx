@@ -16,29 +16,12 @@ export default function SideNav({ role, onLogout, collapsed }) {
 
   const sections = [
     {
-      heading: 'GENERAL',
-      items: [
-  { label: 'Dashboard', icon: <LayoutDashboard size={18} strokeWidth={1.7} /> , to: '/' },
-  { label: 'Meetups', icon: <Calendar size={18} strokeWidth={1.7} />, to: '/meetups' },
-  { label: 'Pricing', icon: <BadgeDollarSign size={18} strokeWidth={1.7} />, to: '/pricing' }
-      ]
-    },
-    {
       heading: 'TEST AUTOMATION',
       items: [
-  { label: 'Automation', icon: <TestTube size={18} strokeWidth={1.7} />, to: '/automation' },
-  { label: 'Test Cases', icon: <BarChart3 size={18} strokeWidth={1.7} />, to: '/automation/testcases' },
-  { label: 'Projects', icon: <FolderOpen size={18} strokeWidth={1.7} />, to: '/automation/projects' }
+  { label: 'Projects', icon: <FolderOpen size={18} strokeWidth={1.7} />, to: '/automation/projects' },
+  { label: 'Test Cases', icon: <BarChart3 size={18} strokeWidth={1.7} />, to: '/automation/testcases' }
       ]
-    },
-    role === 'admin' ? {
-      heading: 'MANAGEMENT',
-      items: [
-  { label: 'Providers', icon: <Hospital size={18} strokeWidth={1.7} />, to: '/register/provider' },
-  { label: 'Consumers', icon: <Users size={18} strokeWidth={1.7} />, to: '/register/consumer' },
-  { label: 'Register', icon: <UserPlus size={18} strokeWidth={1.7} />, to: '/register' }
-      ]
-    } : null
+    }
   ].filter(Boolean);
 
   const width = getDrawerWidth(collapsed);

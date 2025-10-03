@@ -62,7 +62,7 @@ export default function ProjectsList({ token, mode, onToggleMode }) {
             <IconButton onClick={() => navigate('/automation')} size="small">
               <ArrowLeft />
             </IconButton>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
+            <Typography variant="body1" component="h1" sx={{ fontWeight: 700, fontSize: '14px' }}>
               All Projects
             </Typography>
           </Stack>

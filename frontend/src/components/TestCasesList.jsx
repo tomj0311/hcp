@@ -20,6 +20,8 @@ export default function TestCasesList({ token, mode, onToggleMode }) {
     search: ''
   });
   const [openTestCaseDialog, setOpenTestCaseDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [editingTestCase, setEditingTestCase] = useState(null);
   const [newTestCase, setNewTestCase] = useState({ 
     name: '', 
     description: '', 
@@ -90,6 +92,28 @@ export default function TestCasesList({ token, mode, onToggleMode }) {
     }
   };
 
+  const handleEditTestCase = (testCase) => {
+    setEditingTestCase({ ...testCase });
+    setOpenEditDialog(true);
+  };
+
+  const handleUpdateTestCase = async () => {
+    try {
+      await axios.put(`${import.meta.env.VITE_API_URL}/automation/testcases/${editingTestCase.id}`, {
+        name: editingTestCase.name,
+        description: editingTestCase.description,
+        steps: editingTestCase.steps,
+        projectId: editingTestCase.projectId
+      });
+      
+      setOpenEditDialog(false);
+      setEditingTestCase(null);
+      loadTestCases();
+    } catch (error) {
+      console.error('Error updating test case:', error);
+    }
+  };
+
   const handleRunTest = async (testCaseId) => {
     try {
       await axios.post(`${import.meta.env.VITE_API_URL}/automation/testcases/${testCaseId}/run`);
@@ -132,7 +156,7 @@ export default function TestCasesList({ token, mode, onToggleMode }) {
             <IconButton onClick={() => navigate('/automation')} size="small">
               <ArrowLeft />
             </IconButton>
-            <Typography variant="h4" component="h1" sx={{ fontWeight: 700 }}>
+            <Typography variant="body1" component="h1" sx={{ fontWeight: 700, fontSize: '14px' }}>
               Test Cases
             </Typography>
           </Stack>
@@ -261,6 +285,7 @@ export default function TestCasesList({ token, mode, onToggleMode }) {
                         </IconButton>
                         <IconButton 
                           size="small"
+                          onClick={() => handleEditTestCase(testCase)}
                           title="Edit test"
                         >
                           <Edit size={16} />
@@ -338,6 +363,65 @@ export default function TestCasesList({ token, mode, onToggleMode }) {
             disabled={!newTestCase.name || !newTestCase.projectId}
           >
             Create
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Test Case Dialog */}
+      <Dialog open={openEditDialog} onClose={() => setOpenEditDialog(false)} maxWidth="md" fullWidth>
+        <DialogTitle>Edit Test Case</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <FormControl fullWidth>
+              <InputLabel>Project</InputLabel>
+              <Select
+                value={editingTestCase?.projectId || ''}
+                label="Project"
+                onChange={(e) => setEditingTestCase(prev => ({ ...prev, projectId: e.target.value }))}
+              >
+                {projects.map(project => (
+                  <MenuItem key={project.id} value={project.id}>
+                    {project.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            
+            <TextField
+              label="Test Case Name"
+              fullWidth
+              value={editingTestCase?.name || ''}
+              onChange={(e) => setEditingTestCase(prev => ({ ...prev, name: e.target.value }))}
+            />
+            
+            <TextField
+              label="Description"
+              fullWidth
+              multiline
+              rows={2}
+              value={editingTestCase?.description || ''}
+              onChange={(e) => setEditingTestCase(prev => ({ ...prev, description: e.target.value }))}
+            />
+            
+            <TextField
+              label="Test Steps"
+              fullWidth
+              multiline
+              rows={6}
+              placeholder="Describe the test steps here..."
+              value={editingTestCase?.steps || ''}
+              onChange={(e) => setEditingTestCase(prev => ({ ...prev, steps: e.target.value }))}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenEditDialog(false)}>Cancel</Button>
+          <Button 
+            onClick={handleUpdateTestCase} 
+            variant="contained"
+            disabled={!editingTestCase?.name || !editingTestCase?.projectId}
+          >
+            Update
           </Button>
         </DialogActions>
       </Dialog>
