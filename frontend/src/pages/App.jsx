@@ -5,6 +5,11 @@ import { Menu, PanelLeftClose } from 'lucide-react';
 import { buildTheme } from '../theme/theme.js';
 import LoginForm from '../components/LoginForm.jsx';
 import Dashboard from '../components/Dashboard.jsx';
+import DashboardAutomation from '../components/DashboardAutomation.jsx';
+import ProjectDashboard from '../components/ProjectDashboard.jsx';
+import ProjectsList from '../components/ProjectsList.jsx';
+import TestCasesList from '../components/TestCasesList.jsx';
+import NewProject from '../components/NewProject.jsx';
 import ConsumerRegistration from '../components/ConsumerRegistration.jsx';
 import ProviderRegistration from '../components/ProviderRegistration.jsx';
 import Pricing from '../components/Pricing.jsx';
@@ -117,6 +122,11 @@ export default function App(){
   <Box component="main" sx={{ flexGrow:1, ml: showNav && !isMobile? `${drawerWidth}px`:0, px:{xs:1, sm:2, md:3}, pt:{xs:3, sm:4, md:5}, pb:{xs:3, md:6}, transition:'margin-left .25s ease', position:'relative', zIndex: 0 }}>
         <Routes>
           <Route path="/" element={<ProtectedRoute auth={auth}><Dashboard token={auth?.token} role={auth?.role} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} onRequestConsult={requestConsult} /></ProtectedRoute>} />
+          <Route path="/automation" element={<ProtectedRoute auth={auth}><DashboardAutomation token={auth?.token} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} role={auth?.role} /></ProtectedRoute>} />
+          <Route path="/automation/project/new" element={<ProtectedRoute auth={auth}><NewProject token={auth?.token} /></ProtectedRoute>} />
+          <Route path="/automation/project/:projectId" element={<ProtectedRoute auth={auth}><ProjectDashboard token={auth?.token} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} /></ProtectedRoute>} />
+          <Route path="/automation/testcases" element={<ProtectedRoute auth={auth}><TestCasesList token={auth?.token} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} /></ProtectedRoute>} />
+          <Route path="/automation/projects" element={<ProtectedRoute auth={auth}><DashboardAutomation token={auth?.token} mode={mode} onToggleMode={()=> setMode(m=> m==='dark'?'light':'dark')} role={auth?.role} /></ProtectedRoute>} />
           <Route path="/login" element={auth? <Navigate to="/" replace />:<LoginForm onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />
           <Route path="/auth/callback" element={<AuthCallback onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); }} />} />
           <Route path="/adminLogin" element={auth? <Navigate to="/" replace />:<AdminLogin onLogin={data=> { setAuth(data); localStorage.setItem('hcp_auth', JSON.stringify(data)); nav('/'); }} />} />

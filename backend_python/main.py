@@ -16,7 +16,7 @@ current_dir = Path(__file__).parent
 sys.path.insert(0, str(current_dir))
 
 from src.db import connect_db, ensure_seed_providers
-from src.routes import auth, users, payments, uploads, meetups, profile
+from src.routes import auth, users, payments, uploads, meetups, profile, automation
 from src.ws.matchmaking import setup_websocket_routes
 
 # Configure logging
@@ -90,6 +90,7 @@ app.include_router(profile.router, prefix="/profile", tags=["profile"])
 app.include_router(payments.router, prefix="/payments", tags=["payments"])
 app.include_router(uploads.router, prefix="/uploads", tags=["uploads"])
 app.include_router(meetups.router, prefix="/meetups", tags=["meetups"])
+app.include_router(automation.router, tags=["automation"])
 
 # Setup WebSocket routes
 setup_websocket_routes(app)

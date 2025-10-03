@@ -2,7 +2,7 @@ import React from 'react';
 import { Drawer, Toolbar, List, ListItemButton, ListItemIcon, ListItemText, Divider, Box, Typography, Tooltip, Chip, alpha } from '@mui/material';
 import { styled, useTheme } from '@mui/material/styles';
 // Switched to lucide-react open-source icon set for a lighter, more elegant aesthetic.
-import { LayoutDashboard, Users, UserPlus, Hospital, BadgeDollarSign, LogOut, Calendar } from 'lucide-react';
+import { LayoutDashboard, Users, UserPlus, Hospital, BadgeDollarSign, LogOut, Calendar, TestTube, FolderOpen, BarChart3 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const FULL_WIDTH = 240;
@@ -21,6 +21,14 @@ export default function SideNav({ role, onLogout, collapsed }) {
   { label: 'Dashboard', icon: <LayoutDashboard size={18} strokeWidth={1.7} /> , to: '/' },
   { label: 'Meetups', icon: <Calendar size={18} strokeWidth={1.7} />, to: '/meetups' },
   { label: 'Pricing', icon: <BadgeDollarSign size={18} strokeWidth={1.7} />, to: '/pricing' }
+      ]
+    },
+    {
+      heading: 'TEST AUTOMATION',
+      items: [
+  { label: 'Automation', icon: <TestTube size={18} strokeWidth={1.7} />, to: '/automation' },
+  { label: 'Test Cases', icon: <BarChart3 size={18} strokeWidth={1.7} />, to: '/automation/testcases' },
+  { label: 'Projects', icon: <FolderOpen size={18} strokeWidth={1.7} />, to: '/automation/projects' }
       ]
     },
     role === 'admin' ? {

@@ -37,6 +37,9 @@ def get_collections():
         'providers': database['providers'],
         'verificationTokens': database['verificationTokens'],
         'events': database['events'],
+        'automationProjects': database['automationProjects'],
+        'automationTestCases': database['automationTestCases'],
+        'automationTestRuns': database['automationTestRuns'],
     }
 
 
@@ -61,6 +64,14 @@ async def ensure_indexes():
             "createdAt", 
             expireAfterSeconds=60 * 60 * 24 * 3  # 3 days
         )
+        # Automation indexes
+        await collections['automationProjects'].create_index("id", unique=True)
+        await collections['automationProjects'].create_index("name")
+        await collections['automationTestCases'].create_index("id", unique=True)
+        await collections['automationTestCases'].create_index("projectId")
+        await collections['automationTestRuns'].create_index("id", unique=True)
+        await collections['automationTestRuns'].create_index("projectId")
+        await collections['automationTestRuns'].create_index("testCaseId")
         logger.info("[DB] Indexes created successfully")
     except DuplicateKeyError:
         logger.info("[DB] Indexes already exist")
