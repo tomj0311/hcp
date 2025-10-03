@@ -20,7 +20,7 @@ set PYTHONLEGACYWINDOWSSTDIO=1
 
 venv\Scripts\python -m uvicorn main:app ^
     --host 0.0.0.0 --port 4000 ^
-    --reload --reload-impl statreload ^
+    --reload ^
     --reload-dir src --reload-dir . --reload-delay 0.5 ^
     --reload-exclude venv --reload-exclude __pycache__ --reload-exclude .git ^
     --log-level info --no-access-log
